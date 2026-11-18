@@ -1,0 +1,14 @@
+<meta preferred-color-scheme="light" />
+<style>
+  .board { width: 30; height: 38; flex-direction: column; gap: 1.1; padding: 1.8; background-color: rgba(247, 235, 212, 0.96); border-color: #3b2a22; border-width: 0.3; border-radius: 2; }
+  .title { font-size: 2.6; font-weight: 700; color: #3b2a22; }
+  .timer { font-size: 2.4; font-weight: 700; color: #e5533d; }
+  .l { width: 26.4; font-size: 1.9; color: #4a3326; }
+</style>
+<Panel width="30" height="38">
+  <div class="board">
+    <span class="title">REPAIR LOG</span><span id="log-timer" class="timer">0:00</span>
+    <span id="log-1" class="l"> </span><span id="log-2" class="l"> </span><span id="log-3" class="l"> </span><span id="log-4" class="l"> </span><span id="log-5" class="l"> </span>
+    <span id="log-6" class="l"> </span><span id="log-7" class="l"> </span><span id="log-8" class="l"> </span><span id="log-9" class="l"> </span>
+  </div>
+</Panel>

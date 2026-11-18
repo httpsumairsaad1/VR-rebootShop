@@ -1,20 +1,11 @@
-/**
- * Reboot Shop VR entry point.
- */
-
 import { World } from '@iwsdk/core';
 import projectOptions from 'virtual:iwsdk-project';
-import { PanelSystem } from './panel.js';
-import { InteractionSmokeSystem } from './systems/interaction-smoke.js';
-import { UiBindingSystem } from './systems/ui-binding.js';
-import { SeatCalibrationSystem } from './seat-calibration.js';
+import { AmbientSystem } from './systems/ambient-system.js';
+import { RepairSystem } from './systems/repair-system.js';
+import { ShopSystem } from './systems/shop-system.js';
 
-World.create(
-  document.getElementById('scene-container') as HTMLDivElement,
-  projectOptions,
-).then((world) => {
-  world.registerSystem(SeatCalibrationSystem);
-  world.registerSystem(InteractionSmokeSystem);
-  world.registerSystem(UiBindingSystem);
-  world.registerSystem(PanelSystem);
-});
+World.create(document.getElementById('scene-container') as HTMLDivElement, projectOptions)
+  .then((world) => {
+    world.registerSystem(AmbientSystem).registerSystem(RepairSystem).registerSystem(ShopSystem);
+  })
+  .catch((e) => console.error('Reboot Lab failed to start', e));

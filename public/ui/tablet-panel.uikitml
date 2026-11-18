@@ -1,0 +1,24 @@
+<meta preferred-color-scheme="light" />
+<style>
+  .tab { width: 27; height: 20; flex-direction: column; gap: 0.9; padding: 1; background-color: #f7ebd4; border-radius: 1.4; }
+  .row { width: 25; flex-direction: row; justify-content: space-between; align-items: center; }
+  .money { font-size: 2.2; font-weight: 700; color: #b8860b; }
+  .name { font-size: 1.8; font-weight: 700; color: #3b2a22; }
+  .tb { width: 8; height: 3; background-color: #efe0c0; border-color: #3b2a22; border-width: 0.15; border-radius: 0.8; font-size: 1.6; font-weight: 700; color: #3b2a22; }
+  .tb:hover { background-color: #ffb27a; }
+  .page { width: 25; flex-direction: column; gap: 0.6; }
+  .buy { width: 25; height: 3.1; background-color: #ffffff; border-color: #ff8a3d; border-width: 0.2; border-radius: 0.8; font-size: 1.5; font-weight: 700; color: #3b2a22; }
+  .buy:hover { background-color: #ffd9bd; }
+  .crate { width: 25; height: 3.2; background-color: #ff8a3d; border-radius: 0.9; font-size: 1.6; font-weight: 700; color: #ffffff; }
+  .book { width: 25; font-size: 1.45; color: #4a3326; }
+</style>
+<Panel width="27" height="20">
+  <div class="tab">
+    <div class="row"><span class="name">SHOP TABLET</span><span id="tab-money" class="money">$150</span></div>
+    <div class="row"><button id="tab-parts" class="tb">PARTS</button><button id="tab-up" class="tb">UPGRADES</button><button id="tab-book" class="tb">BOOK</button></div>
+    <div id="page-parts" class="page"><button id="buy-port" class="buy">Port module</button><button id="buy-battery" class="buy">Battery</button></div>
+    <div id="page-up" class="page" style="display: none"><button id="up-1" class="buy">Pro motor</button><button id="up-2" class="buy">Magnifier</button><button id="up-3" class="buy">Cleaning kit</button></div>
+    <div id="page-book" class="page" style="display: none"><span class="book">1 Test it: probe the pads.</span><span class="book">2 Open: screws, then spudger.</span><span class="book">3 Unplug the battery first.</span><span class="book">4 Swap, clean, close, POWER.</span></div>
+    <button id="crate-btn" class="crate">DAILY MYSTERY CRATE</button>
+  </div>
+</Panel>
