@@ -3,7 +3,7 @@ import {
   MeshStandardMaterial, Object3D, Quaternion, RayInteractable, Transform, Vector3,
 } from '@iwsdk/core';
 import layout from '../data/layout.json';
-import { Animated, Pressable, RepairItem } from '../components.js';
+import { Animated, Pressable, RepairItem, GuidedTarget } from '../components.js';
 import { bus } from '../game/bus.js';
 import type { FaultId, Order } from '../data/repair-data.js';
 import { CanvasScreen } from '../lib/canvas-screen.js';
@@ -37,6 +37,7 @@ export class RepairSystem extends createSystem({
   grabbed: { required: [RepairItem, Grabbed] },
   hovered: { required: [RepairItem, Hovered] },
   pressables: { required: [Pressable] },
+  guided: { required: [GuidedTarget, RepairItem] },
 }) {
   private readonly items = new Map<string, Item>();
   private readonly objToEntity = new Map<Object3D, Entity>();
@@ -87,6 +88,8 @@ export class RepairSystem extends createSystem({
       this.queries.grabbed.subscribe('disqualify', (e) => this.release(e)),
       this.queries.hovered.subscribe('qualify', (e) => { if (!this.isHeld(e) && this.hl.state(e) === 0) this.hl.set(e, 1); }),
       this.queries.hovered.subscribe('disqualify', (e) => { if (!this.isHeld(e) && this.hl.state(e) === 1) this.hl.set(e, 0); }),
+      this.queries.guided.subscribe('qualify', (e) => { const active = e.getValue(GuidedTarget, 'active'); if (active) this.hl.set(e, 6); }),
+      this.queries.guided.subscribe('disqualify', (e) => { this.hl.set(e, 0); }),
       bus.on('start-order', (o: Order) => this.startOrder(o)),
       bus.on('press', (a: string) => { if (a === 'power') this.powerTest(); }),
       bus.on('stock', (s: { port: number; battery: number }) => { this.stock = s; this.refreshSpares(); }),

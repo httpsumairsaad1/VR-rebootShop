@@ -8,7 +8,7 @@ const MODELS = [
   'bench-monitor', 'oscilloscope', 'desk-fan', 'coffee-mug', 'wall-clock', 'potted-plant', 'parts-bins', 'tool-board', 'solder-station',
   'shop-tablet', 'intake-chute', 'receipt-printer', 'sign-open', 'coin', 'star', 'customer-a', 'customer-b', 'customer-c',
 ];
-const PANELS = ['hud-panel', 'order-panel', 'log-panel', 'tablet-panel', 'receipt-panel'];
+const PANELS = ['hud-panel', 'order-panel', 'log-panel', 'tablet-panel', 'receipt-panel', 'guide-panel'];
 
 export default defineAssets({
   ...Object.fromEntries(MODELS.map((m) => [m, { url: `${base}models/${m}.glb`, type: AssetType.GLTF }])),

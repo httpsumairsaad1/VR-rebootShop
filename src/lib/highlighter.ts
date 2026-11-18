@@ -1,8 +1,8 @@
 import { BackSide, Entity, Mesh, MeshBasicMaterial, MeshStandardMaterial } from '@iwsdk/core';
 
-/** 0 none, 1 hover (white), 2 correct (green), 3 wrong (red), 4 hint (amber pulse), 5 selected (sky blue) */
-const COLORS = ['#000000', '#ffffff', '#3dff8f', '#ff4d5e', '#ffb04a', '#4fc3ff'];
-const GLOW = [0, 0.12, 0.4, 0.45, 0.4, 0.35];
+/** 0 none, 1 hover (white), 2 correct (green), 3 wrong (red), 4 hint (amber pulse), 5 selected (sky blue), 6 guided (bright green pulse) */
+const COLORS = ['#000000', '#ffffff', '#3dff8f', '#ff4d5e', '#ffb04a', '#4fc3ff', '#00ff44'];
+const GLOW = [0, 0.12, 0.4, 0.45, 0.4, 0.35, 0.6];
 type Entry = { std: Array<{ m: MeshStandardMaterial; e: string; i: number }>; out: Array<{ mesh: Mesh; mat: MeshBasicMaterial }> };
 
 /** Cheap inverted-hull outline + emissive tint. No post-processing (Quest friendly). */

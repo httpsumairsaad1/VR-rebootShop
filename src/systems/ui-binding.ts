@@ -37,9 +37,14 @@ type UiTextField =
   | 'nextDay'
   | 'decisionRush'
   | 'decisionPark'
-  | 'decisionContinue';
+  | 'decisionContinue'
+  | 'guideStepNum'
+  | 'guideStepTitle'
+  | 'guideStepDetail'
+  | 'guideTip'
+  | 'guideProgress';
 
-type UiVisibilityField = 'speechVisible' | 'receiptVisible' | 'decisionVisible';
+type UiVisibilityField = 'speechVisible' | 'receiptVisible' | 'decisionVisible' | 'guideVisible';
 
 interface TextBinding {
   element: UIKit.Text;
@@ -88,6 +93,11 @@ const TEXT_BINDINGS: ReadonlyArray<
   ['decision-plate-panel', 'decision-rush', 'decisionRush'],
   ['decision-plate-panel', 'decision-park', 'decisionPark'],
   ['decision-plate-panel', 'decision-continue', 'decisionContinue'],
+  ['guide-panel', 'guide-step-num', 'guideStepNum'],
+  ['guide-panel', 'guide-step-title', 'guideStepTitle'],
+  ['guide-panel', 'guide-step-detail', 'guideStepDetail'],
+  ['guide-panel', 'guide-tip', 'guideTip'],
+  ['guide-panel', 'guide-progress', 'guideProgress'],
 ];
 
 const VISIBILITY_BINDINGS: ReadonlyArray<
@@ -96,6 +106,7 @@ const VISIBILITY_BINDINGS: ReadonlyArray<
   ['speech-bubble-panel', 'speechVisible'],
   ['day-receipt-panel', 'receiptVisible'],
   ['decision-plate-panel', 'decisionVisible'],
+  ['guide-panel', 'guideVisible'],
 ];
 
 export class UiBindingSystem extends createSystem({

@@ -1,0 +1,185 @@
+<meta preferred-color-scheme="light" />
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 38;
+    gap: 2;
+    padding-top: 3;
+    padding-bottom: 3;
+    padding-left: 3;
+    padding-right: 3;
+  }
+  .header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 32;
+  }
+  .title {
+    color: #2f8f86;
+    font-size: 2.8;
+    font-weight: 700;
+  }
+  .title:dark {
+    color: #4cc38a;
+  }
+  .step-badge {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.8;
+    padding-top: 0.8;
+    padding-bottom: 0.8;
+    padding-left: 1.5;
+    padding-right: 1.5;
+    border-radius: 1.5;
+    background-color: #1b2a30;
+  }
+  .step-num {
+    color: #f2b63c;
+    font-size: 2.2;
+    font-weight: 700;
+  }
+  .step-num:dark {
+    color: #ffdd44;
+  }
+  .step-total {
+    color: #6b5a4a;
+    font-size: 2.2;
+  }
+  .step-total:dark {
+    color: #a0988a;
+  }
+  .progress-bar {
+    width: 32;
+    height: 0.6;
+    background-color: #d9c7a0;
+    border-radius: 0.3;
+  }
+  .progress-fill {
+    height: 0.6;
+    background-color: #3dff8f;
+    border-radius: 0.3;
+  }
+  .progress-fill:dark {
+    background-color: #4cc38a;
+  }
+  .step-title {
+    color: #3b2a22;
+    font-size: 3.2;
+    font-weight: 700;
+  }
+  .step-title:dark {
+    color: #eaf4f2;
+  }
+  .step-detail {
+    color: #4a3326;
+    font-size: 2.4;
+    line-height: 3.2;
+  }
+  .step-detail:dark {
+    color: #c8b8a8;
+  }
+  .tip {
+    flex-direction: row;
+    gap: 1;
+    padding-top: 1.5;
+    padding-bottom: 1.5;
+    padding-left: 2;
+    padding-right: 2;
+    border-radius: 1.5;
+    background-color: #fff8e0;
+    border-color: #f2b63c;
+    border-width: 0.2;
+  }
+  .tip:dark {
+    background-color: #2a2418;
+    border-color: #f2b63c;
+  }
+  .tip-icon {
+    color: #f2b63c;
+    font-size: 2.8;
+    font-weight: 700;
+  }
+  .tip-text {
+    color: #5b3d2c;
+    font-size: 2.2;
+    font-weight: 600;
+  }
+  .tip-text:dark {
+    color: #f5e6c8;
+  }
+  .controls {
+    flex-direction: row;
+    justify-content: space-between;
+    width: 32;
+    margin-top: 1;
+  }
+  .btn {
+    width: 14;
+    height: 4.2;
+    border-radius: 1.2;
+    font-size: 2.2;
+    font-weight: 700;
+  }
+  .btn-primary {
+    background-color: #2f8f86;
+    color: #ffffff;
+  }
+  .btn-primary:hover {
+    background-color: #4cc38a;
+  }
+  .btn-primary:dark {
+    background-color: #4cc38a;
+  }
+  .btn-secondary {
+    background-color: #d9c7a0;
+    color: #3b2a22;
+  }
+  .btn-secondary:hover {
+    background-color: #e8d8b8;
+  }
+  .btn-secondary:dark {
+    background-color: #4a3d2e;
+    color: #eaf4f2;
+  }
+  .skip-btn {
+    width: 32;
+    height: 3.5;
+    background-color: transparent;
+    border-color: #6b5a4a;
+    border-width: 0.2;
+    border-radius: 1;
+    font-size: 2;
+    color: #6b5a4a;
+  }
+  .skip-btn:hover {
+    background-color: #f0ebe0;
+  }
+  .skip-btn:dark {
+    border-color: #8a7a6a;
+    color: #a0988a;
+  }
+</style>
+<Panel class="panel-root" id="guide-panel-root">
+  <div class="header">
+    <span id="guide-title" class="title">REPAIR GUIDE</span>
+    <div class="step-badge">
+      <span id="guide-step-num" class="step-num">1</span>
+      <span class="step-total">/ 11</span>
+    </div>
+  </div>
+  <div class="progress-bar">
+    <div id="guide-progress" class="progress-fill" style="width: 0"></div>
+  </div>
+  <div id="guide-step-title" class="step-title">Welcome to Reboot Lab</div>
+  <div id="guide-step-detail" class="step-detail">A customer is waiting. Press the GREEN button on the bench to accept the job.</div>
+  <div class="tip">
+    <span class="tip-icon">!</span>
+    <span id="guide-tip" class="tip-text">The next tool you need will glow GREEN. Grab it and follow the step.</span>
+  </div>
+  <div class="controls">
+    <button id="guide-prev" class="btn btn-secondary" style="display: none">BACK</button>
+    <button id="guide-next" class="btn btn-primary">NEXT</button>
+  </div>
+  <button id="guide-skip" class="skip-btn">Skip Tutorial</button>
+</Panel>
