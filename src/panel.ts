@@ -1,37 +1,23 @@
 /**
- * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * PanelSystem — Minimal XR session handling for Milestone 1.
  *
- * This source code is licensed under the MIT license found in the
- * LICENSE file in the root directory of this source tree.
+ * The full bench-monitor.uikitml with Start Shift button is built in Milestone 5.
+ * For now, this system just ensures XR can launch and handles the visibility state.
  */
 
 import { createSystem, UIKitMLAsset, VisibilityState } from '@iwsdk/core';
 
 export class PanelSystem extends createSystem({}) {
   init(): void {
-    const panel = this.world.getSceneObject<UIKitMLAsset>('welcome-panel');
-    const xrButton = panel?.getElementById('xr-button');
-    const exitButton = panel?.getElementById('exit-button');
-    if (xrButton == null || exitButton == null) {
-      return;
-    }
-    if (!this.world.xrEnabled) {
-      xrButton.setProperties({ display: 'none' });
-      exitButton.setProperties({ display: 'none' });
-      return;
-    }
+    // In Milestone 1, we don't have a welcome panel yet.
+    // The dev server launches XR automatically when "offer: always" is set.
+    // This system is a placeholder for the future bench-monitor panel binding.
 
-    const launchXR = () => this.world.launchXR();
-    const exitXR = () => this.world.exitXR();
-    xrButton.addEventListener('click', launchXR);
-    exitButton.addEventListener('click', exitXR);
+    if (!this.world.xrEnabled) return;
+
     this.cleanupFuncs.push(
-      () => xrButton.removeEventListener('click', launchXR),
-      () => exitButton.removeEventListener('click', exitXR),
       this.world.visibilityState.subscribe((visibilityState) => {
-        const is2D = visibilityState === VisibilityState.NonImmersive;
-        xrButton.setProperties({ display: is2D ? 'flex' : 'none' });
-        exitButton.setProperties({ display: is2D ? 'none' : 'flex' });
+        // Future: show/hide UI based on immersive state.
       }),
     );
   }

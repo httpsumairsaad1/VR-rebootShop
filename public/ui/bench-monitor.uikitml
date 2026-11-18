@@ -1,0 +1,42 @@
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 42;
+    gap: 2;
+    padding: 3;
+  }
+
+  .eyebrow {
+    color: #665500;
+    font-size: 1.5;
+    font-weight: 700;
+  }
+
+  .eyebrow:dark {
+    color: #f5d90a;
+  }
+
+  .heading {
+    color: #1c1d20;
+    font-size: 3.2;
+    font-weight: 700;
+  }
+
+  .heading:dark {
+    color: #fafaf7;
+  }
+
+  .status {
+    color: #3a3b40;
+    font-size: 2;
+  }
+
+  .status:dark {
+    color: #dddfe3;
+  }
+</style>
+<Panel class="panel-root">
+  <div class="eyebrow">REBOOT SHOP / WORKBENCH</div>
+  <div class="heading">Bench Monitor</div>
+  <div class="status">System ready</div>
+</Panel>

@@ -26,13 +26,13 @@
       "camera": {
         "position": [
           0,
-          1.6,
-          1
+          1.2,
+          0.1
         ],
         "lookAt": [
           0,
-          0.95,
-          -1.95
+          0.9,
+          -1.0
         ]
       }
     },
@@ -41,7 +41,11 @@
         "useWorker": true
       },
       "grabbing": true,
-      "physics": false,
+      "physics": {
+        "useWorker": true,
+        "updateFrequency": 60,
+        "interpolation": true
+      },
       "sceneUnderstanding": false,
       "environmentRaycast": false,
       "spatialUI": {
