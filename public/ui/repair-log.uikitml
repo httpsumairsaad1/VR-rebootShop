@@ -1,0 +1,51 @@
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 32;
+    gap: 1.8;
+    padding-top: 2.5;
+    padding-bottom: 2.5;
+    padding-left: 2.5;
+    padding-right: 2.5;
+  }
+  .label {
+    color: #2f8f86;
+    font-size: 2.4;
+    font-weight: 700;
+  }
+  .label:dark {
+    color: #4cc38a;
+  }
+  .heading {
+    color: #3b2a22;
+    font-size: 4;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #eaf4f2;
+  }
+  .row {
+    color: #3b2a22;
+    font-size: 2.4;
+  }
+  .row:dark {
+    color: #eaf4f2;
+  }
+  .assist {
+    color: #3b2a22;
+    font-size: 2.4;
+    font-weight: 700;
+  }
+  .assist:dark {
+    color: #1b2a30;
+  }
+</style>
+<Panel class="panel-root">
+  <div id="repair-label" class="label">REPAIR LOG</div>
+  <div id="repair-heading" class="heading">Smartphone / Charging</div>
+  <div id="repair-step-1" class="row">[x] Inspect the device</div>
+  <div id="repair-step-2" class="row">[ ] Open the back cover</div>
+  <div id="repair-step-3" class="row">[ ] Replace the charge port</div>
+  <div id="repair-step-4" class="row">[ ] Test power and charging</div>
+  <div id="repair-assist-note" class="assist">Assist: costs 1 star</div>
+</Panel>

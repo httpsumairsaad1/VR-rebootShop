@@ -1,0 +1,52 @@
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 32;
+    gap: 1.5;
+    padding-top: 2.5;
+    padding-bottom: 2.5;
+    padding-left: 2.5;
+    padding-right: 2.5;
+  }
+  .label {
+    color: #2f8f86;
+    font-size: 2.4;
+    font-weight: 700;
+  }
+  .label:dark {
+    color: #4cc38a;
+  }
+  .heading {
+    color: #3b2a22;
+    font-size: 4;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #eaf4f2;
+  }
+  .detail {
+    color: #3b2a22;
+    font-size: 2.4;
+  }
+  .detail:dark {
+    color: #eaf4f2;
+  }
+  .symptom {
+    color: #ffffff;
+    font-size: 2.4;
+    font-weight: 700;
+    padding-top: 1.5;
+    padding-bottom: 1.5;
+    padding-left: 2;
+    padding-right: 2;
+    border-radius: 2;
+    background-color: #e5533d;
+  }
+</style>
+<Panel class="panel-root">
+  <div id="order-number" class="label">REPAIR ORDER / 101</div>
+  <div id="order-customer" class="heading">Mina</div>
+  <div id="order-device" class="detail">Smartphone</div>
+  <div id="order-symptom" class="symptom">WON'T CHARGE</div>
+  <div id="order-payout" class="detail">Payout: 45 coins</div>
+</Panel>

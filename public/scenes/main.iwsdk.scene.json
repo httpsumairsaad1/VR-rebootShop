@@ -35,7 +35,6 @@
         "receiveShadow": true
       },
       "components": {
-        "LocomotionEnvironment": {},
         "DomeFade": {
           "start": 4,
           "end": 10
@@ -170,6 +169,9 @@
       },
       "transform": {
         "position": [0.45, 0.865, -0.9]
+      },
+      "components": {
+        "UiBindingState": {}
       }
     },
     {
@@ -222,10 +224,6 @@
       },
       "transform": {
         "position": [0, 1.1, -1.55]
-      },
-      "components": {
-        "RayInteractable": {},
-        "PokeInteractable": {}
       }
     },
     {
@@ -288,16 +286,23 @@
         "receiveShadow": true
       },
       "transform": {
-        "position": [0, 0.88, -1.0]
+        "position": [0, 0.93, -1.0]
       },
       "components": {
-        "DistanceGrabbable": {
-          "movementMode": "MoveFromTarget",
-          "translate": true,
-          "rotate": true,
-          "scale": false
+        "InteractionSmokeTarget": {
+          "kind": "grab"
         },
-        "RayInteractable": {}
+        "PhysicsBody": {
+          "state": "DYNAMIC",
+          "linearDamping": 0.05,
+          "angularDamping": 0.05
+        },
+        "PhysicsShape": {
+          "shape": "Box",
+          "dimensions": [0.06, 0.06, 0.06],
+          "friction": 0.5,
+          "restitution": 0
+        }
       }
     },
     {
@@ -313,8 +318,127 @@
         "position": [0.28, 0.88, -1.05]
       },
       "components": {
-        "RayInteractable": {},
-        "PokeInteractable": {}
+        "InteractionSmokeTarget": {
+          "kind": "poke"
+        },
+        "PhysicsBody": {
+          "state": "STATIC"
+        },
+        "PhysicsShape": {
+          "shape": "Cylinder",
+          "dimensions": [0.025, 0.012, 0],
+          "friction": 0.5,
+          "restitution": 0
+        }
+      }
+    },
+    {
+      "id": "hint-pill-panel",
+      "name": "Hint Pill",
+      "content": {
+        "type": "asset",
+        "asset": "hint-pill"
+      },
+      "transform": {
+        "position": [0, 1.28, -0.92],
+        "scale": [0.7, 0.7, 0.7]
+      }
+    },
+    {
+      "id": "bench-monitor-panel",
+      "name": "Bench Monitor Panel",
+      "content": {
+        "type": "asset",
+        "asset": "bench-monitor-panel"
+      },
+      "transform": {
+        "position": [0.45, 1.815, -0.88],
+        "scale": [0.78, 0.78, 0.78]
+      }
+    },
+    {
+      "id": "speech-bubble-panel",
+      "name": "Speech Bubble Panel",
+      "content": {
+        "type": "asset",
+        "asset": "speech-bubble"
+      },
+      "transform": {
+        "position": [0, 1.95, -1.25],
+        "scale": [0.8, 0.8, 0.8]
+      }
+    },
+    {
+      "id": "order-tag-panel",
+      "name": "Order Tag Panel",
+      "content": {
+        "type": "asset",
+        "asset": "order-tag"
+      },
+      "transform": {
+        "position": [0, 1.38, -1.18],
+        "scale": [0.8, 0.8, 0.8]
+      }
+    },
+    {
+      "id": "repair-log-panel",
+      "name": "Repair Log Panel",
+      "content": {
+        "type": "asset",
+        "asset": "repair-log-panel"
+      },
+      "transform": {
+        "position": [-0.35, 1.0, 0.22],
+        "rotationDeg": [-22.5, 180, 0],
+        "scale": [0.7, 0.7, 0.7]
+      }
+    },
+    {
+      "id": "wrist-hud-panel",
+      "name": "Wrist HUD Panel",
+      "content": {
+        "type": "asset",
+        "asset": "wrist-hud"
+      },
+      "transform": {
+        "position": [-0.35, 1.15, -0.35],
+        "scale": [0.7, 0.7, 0.7]
+      }
+    },
+    {
+      "id": "shop-tablet-panel",
+      "name": "Shop Tablet Panel",
+      "content": {
+        "type": "asset",
+        "asset": "shop-tablet-panel"
+      },
+      "transform": {
+        "position": [0.5, 1.865, -1.09],
+        "scale": [0.9, 0.9, 0.9]
+      }
+    },
+    {
+      "id": "day-receipt-panel",
+      "name": "Day Receipt Panel",
+      "content": {
+        "type": "asset",
+        "asset": "day-receipt"
+      },
+      "transform": {
+        "position": [0.68, 1.55, -1.28],
+        "scale": [0.75, 0.75, 0.75]
+      }
+    },
+    {
+      "id": "decision-plate-panel",
+      "name": "Decision Plate Panel",
+      "content": {
+        "type": "asset",
+        "asset": "decision-plate"
+      },
+      "transform": {
+        "position": [-0.32, 1.38, -1.42],
+        "scale": [0.75, 0.75, 0.75]
       }
     }
   ],

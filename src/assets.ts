@@ -29,6 +29,26 @@ import {
   createRepairLog,
   createSpeechBubbleMount,
 } from './scene-assets/workbench.scene-asset.js';
+import {
+  createSmartphone,
+  createSmartphonePremium,
+  createBudgetPhone,
+  createFlipPhone,
+  createGamepadStandard,
+  createGamepadPro,
+  createFightStick,
+  createEarbudsTWS,
+  createHeadphonesOver,
+  createHeadphonesOn,
+  createGamingHeadset,
+  createHandheldRetro,
+  createHandheldModern,
+  createHandheldClamshell,
+  createSmartwatch,
+  createPortableSpeaker,
+  createActionCamera,
+  createDroneMini,
+} from './scene-assets/devices.scene-asset.js';
 
 const publicAssetUrl = (filePath: string): string =>
   `${import.meta.env.BASE_URL}${filePath.replace(/^\/+/u, '')}`;
@@ -75,6 +95,26 @@ export default defineAssets({
   // Smoke-test interactables.
   'grab-puck': createGrabPuck(),
   'power-button': createPowerButton(),
+
+  // Device procedural assets (referenced by devices.ts).
+  'smartphone': createSmartphone(),
+  'smartphone-premium': createSmartphonePremium(),
+  'budget-phone': createBudgetPhone(),
+  'flip-phone': createFlipPhone(),
+  'gamepad-standard': createGamepadStandard(),
+  'gamepad-pro': createGamepadPro(),
+  'fight-stick': createFightStick(),
+  'earbuds-tws': createEarbudsTWS(),
+  'headphones-over': createHeadphonesOver(),
+  'headphones-on': createHeadphonesOn(),
+  'gaming-headset': createGamingHeadset(),
+  'handheld-retro': createHandheldRetro(),
+  'handheld-modern': createHandheldModern(),
+  'handheld-clamshell': createHandheldClamshell(),
+  'smartwatch': createSmartwatch(),
+  'portable-speaker': createPortableSpeaker(),
+  'action-camera': createActionCamera(),
+  'drone-mini': createDroneMini(),
 
   // UIKitML panels (created in Milestone 5).
   'bench-monitor-panel': uikitml('bench-monitor.uikitml', 'Bench Monitor'),

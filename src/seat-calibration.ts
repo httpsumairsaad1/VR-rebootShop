@@ -21,6 +21,9 @@ export class SeatCalibrationSystem extends createSystem({
   private calibrated = false;
 
   init(): void {
+    this.player.rotation.x = 0;
+    this.player.rotation.z = 0;
+
     // The calibration is triggered by a UI button on the bench monitor.
     // We listen for the calibration entity to be created and ready.
     this.queries.calibration.subscribe('qualify', (entity) => {
@@ -99,15 +102,14 @@ export class SeatCalibrationSystem extends createSystem({
     headOffset.sub(rig.position);
 
     const measuredEyeHeight = currentRigY + headOffset.y;
-    const targetEyeHeight = palmY + 0.3; // approximate seated eye height from palm
+    const targetEyeHeight = Math.max(1.1, Math.min(1.3, palmY + 0.3));
 
     const deltaY = targetEyeHeight - measuredEyeHeight;
     const newRigY = currentRigY + deltaY;
 
-    // Clamp to reasonable seated range.
-    const clampedY = Math.max(1.1, Math.min(1.3, newRigY));
-
-    rig.position.y = clampedY;
+    rig.position.y = newRigY;
+    rig.rotation.x = 0;
+    rig.rotation.z = 0;
 
     // Mark calibration complete.
     for (const entity of this.queries.calibration.entities) {
@@ -120,6 +122,6 @@ export class SeatCalibrationSystem extends createSystem({
     if (!globals.seatCalibratedSignal) {
       globals.seatCalibratedSignal = signal({ height: 0 });
     }
-    (globals.seatCalibratedSignal as ReturnType<typeof signal>).value = { height: clampedY };
+    (globals.seatCalibratedSignal as ReturnType<typeof signal>).value = { height: targetEyeHeight };
   }
 }

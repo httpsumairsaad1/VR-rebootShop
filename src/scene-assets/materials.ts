@@ -57,6 +57,14 @@ export const techDark = createSceneMaterial({
   roughness: 0.4,
 });
 
+// Light tech body (tablet, monitor screen bezel).
+export const techLight = createSceneMaterial({
+  id: 'shop-tech-light',
+  model: 'standard',
+  baseColor: '#2A3A40',
+  roughness: 0.35,
+});
+
 // Cream lamp shade / light trim.
 export const cream = createSceneMaterial({
   id: 'shop-cream',
@@ -90,6 +98,24 @@ export const orange = createSceneMaterial({
   roughness: 0.5,
 });
 
+// Blue (Bluetooth, etc.)
+export const blue = createSceneMaterial({
+  id: 'shop-blue',
+  model: 'standard',
+  baseColor: '#007AFF',
+  roughness: 0.3,
+  metalness: 0.1,
+});
+
+// Red (recording, error, mic mute)
+export const red = createSceneMaterial({
+  id: 'shop-red',
+  model: 'standard',
+  baseColor: '#FF3B30',
+  roughness: 0.3,
+  metalness: 0.1,
+});
+
 // Room shell.
 export const floorMat = createSceneMaterial({
   id: 'shop-floor',
@@ -103,6 +129,69 @@ export const wallMat = createSceneMaterial({
   model: 'standard',
   baseColor: '#4A3B31',
   roughness: 0.9,
+});
+
+// Glass (screens, camera lenses)
+export const glass = new MeshStandardMaterial({
+  color: 0x0a0a1a,
+  roughness: 0.05,
+  metalness: 0.9,
+  transmission: 0.95,
+  thickness: 0.001,
+  ior: 1.5,
+  envMapIntensity: 1.5,
+});
+
+// Screen off (dark)
+export const screenOff = new MeshStandardMaterial({
+  color: 0x0a0a1a,
+  roughness: 0.1,
+  metalness: 0.9,
+});
+
+// Screen on (bright)
+export const screenOn = new MeshStandardMaterial({
+  color: 0x0a1a0a,
+  roughness: 0.1,
+  metalness: 0.8,
+  emissive: 0x0a3a0a,
+  emissiveIntensity: 0.3,
+});
+
+// Plastic white
+export const plasticWhite = createSceneMaterial({
+  id: 'shop-plastic-white',
+  model: 'standard',
+  baseColor: '#F0F0F0',
+  roughness: 0.4,
+  metalness: 0.05,
+});
+
+// Plastic black
+export const plasticBlack = createSceneMaterial({
+  id: 'shop-plastic-black',
+  model: 'standard',
+  baseColor: '#1A1A2E',
+  roughness: 0.4,
+  metalness: 0.1,
+});
+
+// Rubber (grips, straps, cables)
+export const rubber = createSceneMaterial({
+  id: 'shop-rubber',
+  model: 'standard',
+  baseColor: '#0D0D1A',
+  roughness: 0.8,
+  metalness: 0.0,
+});
+
+// Gold (connectors, accents)
+export const gold = createSceneMaterial({
+  id: 'shop-gold',
+  model: 'standard',
+  baseColor: '#D4A843',
+  roughness: 0.2,
+  metalness: 0.8,
 });
 
 // Always-on emissive glows (never mutated at runtime).

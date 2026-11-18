@@ -1,0 +1,55 @@
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 32;
+    gap: 2;
+    padding-top: 3;
+    padding-bottom: 3;
+    padding-left: 3;
+    padding-right: 3;
+  }
+  .eyebrow {
+    color: #2f8f86;
+    font-size: 2.4;
+    font-weight: 700;
+  }
+  .eyebrow:dark {
+    color: #4cc38a;
+  }
+  .heading {
+    color: #3b2a22;
+    font-size: 4.6;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #eaf4f2;
+  }
+  .body {
+    color: #3b2a22;
+    font-size: 2.4;
+  }
+  .body:dark {
+    color: #eaf4f2;
+  }
+  .medal {
+    color: #3b2a22;
+    font-size: 3.2;
+    font-weight: 700;
+  }
+  .medal-card {
+    padding-top: 2;
+    padding-bottom: 2;
+    padding-left: 2;
+    padding-right: 2;
+    border-radius: 2;
+    background-color: #f2b63c;
+  }
+</style>
+<Panel class="panel-root">
+  <div id="receipt-eyebrow" class="eyebrow">SHIFT SUMMARY / DAY 1</div>
+  <div id="receipt-heading" class="heading">A good day's work</div>
+  <div id="receipt-earnings" class="body">Earnings: 0 coins</div>
+  <div id="receipt-stars" class="body">Stars earned: 0</div>
+  <div class="medal-card"><div id="receipt-medal" class="medal">MEDAL / NOT EARNED</div></div>
+  <div id="receipt-open-next" class="body">Open Day 2 on the shop tablet</div>
+</Panel>

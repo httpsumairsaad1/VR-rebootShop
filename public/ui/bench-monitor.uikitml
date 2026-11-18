@@ -1,42 +1,61 @@
 <style>
   .panel-root {
     flex-direction: column;
-    width: 42;
+    width: 40;
     gap: 2;
-    padding: 3;
+    padding-top: 3;
+    padding-bottom: 3;
+    padding-left: 3;
+    padding-right: 3;
   }
-
   .eyebrow {
-    color: #665500;
-    font-size: 1.5;
+    color: #2f8f86;
+    font-size: 2.4;
     font-weight: 700;
   }
-
   .eyebrow:dark {
-    color: #f5d90a;
+    color: #4cc38a;
   }
-
   .heading {
-    color: #1c1d20;
+    color: #3b2a22;
+    font-size: 4.6;
+    font-weight: 700;
+  }
+  .heading:dark {
+    color: #eaf4f2;
+  }
+  .status {
+    color: #3b2a22;
     font-size: 3.2;
     font-weight: 700;
   }
-
-  .heading:dark {
-    color: #fafaf7;
-  }
-
-  .status {
-    color: #3a3b40;
-    font-size: 2;
-  }
-
   .status:dark {
-    color: #dddfe3;
+    color: #eaf4f2;
+  }
+  .readout {
+    color: #3b2a22;
+    font-size: 2.4;
+  }
+  .readout:dark {
+    color: #eaf4f2;
+  }
+  .readout-chip {
+    flex-direction: row;
+    justify-content: space-between;
+    padding-top: 1.5;
+    padding-bottom: 1.5;
+    padding-left: 2;
+    padding-right: 2;
+    border-radius: 2;
+    background-color: #1b2a30;
   }
 </style>
 <Panel class="panel-root">
-  <div class="eyebrow">REBOOT SHOP / WORKBENCH</div>
-  <div class="heading">Bench Monitor</div>
-  <div class="status">System ready</div>
+  <div id="monitor-eyebrow" class="eyebrow">REBOOT LAB / TEST BENCH</div>
+  <div id="monitor-heading" class="heading">Bench Monitor</div>
+  <div id="monitor-status" class="status">SYSTEM READY</div>
+  <div class="readout-chip">
+    <div id="monitor-boot-test" class="readout">Boot test: awaiting device</div>
+    <div id="monitor-voltage" class="readout">0.0 V</div>
+  </div>
 </Panel>

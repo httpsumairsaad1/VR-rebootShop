@@ -1,0 +1,84 @@
+<style>
+  .panel-root {
+    flex-direction: column;
+    width: 40;
+    height: 30;
+    gap: 2;
+    padding-top: 3;
+    padding-bottom: 3;
+    padding-left: 3;
+    padding-right: 3;
+  }
+  .eyebrow {
+    color: #f2b63c;
+    font-size: 2.4;
+    font-weight: 700;
+  }
+  .heading {
+    color: #eaf4f2;
+    font-size: 4.6;
+    font-weight: 700;
+  }
+  .tabs {
+    flex-direction: row;
+    gap: 1;
+    justify-content: space-between;
+  }
+  .tab {
+    color: #eaf4f2;
+    font-size: 2.4;
+    font-weight: 700;
+    padding-top: 1.2;
+    padding-bottom: 1.2;
+    padding-left: 1.4;
+    padding-right: 1.4;
+    border-radius: 1.5;
+    background-color: #2f8f86;
+  }
+  .content {
+    flex-direction: column;
+    gap: 1.5;
+    padding-top: 2;
+    padding-bottom: 2;
+    padding-left: 2;
+    padding-right: 2;
+    border-radius: 2;
+    background-color: #243941;
+  }
+  .body {
+    color: #eaf4f2;
+    font-size: 2.4;
+  }
+  .crate {
+    color: #3b2a22;
+    font-size: 3.2;
+    font-weight: 700;
+  }
+  .crate-card {
+    padding-top: 2;
+    padding-bottom: 2;
+    padding-left: 2;
+    padding-right: 2;
+    border-radius: 2;
+    background-color: #f2b63c;
+  }
+</style>
+<Panel class="panel-root">
+  <div id="tablet-eyebrow" class="eyebrow">REBOOT LAB / SHOP DESK</div>
+  <div id="tablet-heading" class="heading">Shop Tablet</div>
+  <div class="tabs">
+    <div id="tablet-tab-upgrades" class="tab">Upgrades</div>
+    <div id="tablet-tab-parts" class="tab">Parts</div>
+    <div id="tablet-tab-market" class="tab">Market</div>
+    <div id="tablet-tab-flips" class="tab">Flips</div>
+    <div id="tablet-tab-book" class="tab">Book</div>
+  </div>
+  <div class="content">
+    <div id="tablet-contracts" class="body">CONTRACTS / 1 open repair</div>
+    <div class="crate-card">
+      <div id="tablet-crate" class="crate">DAILY MYSTERY CRATE</div>
+      <div id="tablet-crate-detail" class="body">2 hidden faults / 5 minute timer</div>
+    </div>
+    <div id="tablet-page" class="body">Choose a tab to browse the shop.</div>
+  </div>
+</Panel>
