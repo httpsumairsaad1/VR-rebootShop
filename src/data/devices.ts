@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Device and fault data for Reboot Shop VR: Gadget Repair.
  *
  * Data-driven: adding a new gadget requires zero new ECS system code — the
@@ -737,3 +737,94 @@ export const devices: DeviceDefinition[] = [
     requiredSteps: ['identify_fault', 'remove_props', 'remove_screws', 'replace_motor_or_battery', 'clean_motors', 'reassemble'],
   },
 ];
+
+/** Runtime profile consumed by the generic repair system. Keep GLB node ids stable. */
+export type DeviceRepairDefinition = {
+  readonly id: string;
+  readonly name: string;
+  readonly tier: 1 | 2 | 3;
+  readonly parts: readonly { readonly id: string; readonly role: string; readonly assetId: string }[];
+  readonly faults: readonly {
+    readonly id: string;
+    readonly label: string;
+    readonly symptom: string;
+    readonly affectedPart: string;
+    readonly repairSteps: readonly string[];
+    readonly testCondition: 'faulty-port' | 'faulty-battery' | 'dust-present';
+    readonly failureMessage: string;
+  }[];
+  readonly stepOrder: readonly string[];
+  readonly steps: readonly { readonly id: string; readonly hint: string; readonly target?: string }[];
+  readonly scene: {
+    readonly body: string;
+    readonly cover: string;
+    readonly connector: string;
+    readonly battery: { readonly installed: string; readonly faulty: string; readonly spare: string };
+    readonly port: { readonly installed: string; readonly faulty: string; readonly spare: string };
+    readonly tools: readonly string[];
+    readonly fasteners: readonly string[];
+    readonly ledNode: string;
+    readonly dustNode: string;
+  };
+  readonly powerTest: { readonly successLines: readonly string[] };
+  readonly geometry: {
+    readonly halfWidth: number;
+    readonly halfLength: number;
+    readonly intakeYawDeg: number;
+    readonly bodyThickness: number;
+    readonly coverThickness: number;
+    readonly fastenerPoints: readonly (readonly [number, number])[];
+    readonly batteryBay: readonly [number, number, number];
+    readonly batterySocket: readonly [number, number, number];
+    readonly portSocket: readonly [number, number, number];
+    readonly batteryTab: readonly [number, number, number];
+    readonly batteryTestPad: readonly [number, number, number];
+    readonly portTestPad: readonly [number, number, number];
+  };
+};
+
+export const PHONE_REPAIR: DeviceRepairDefinition = {
+  id: 'phone', name: 'Smartphone', tier: 1,
+  scene: {
+    body: 'phone-body', cover: 'phone-back', connector: 'plug',
+    battery: { installed: 'battery-ok', faulty: 'battery-bad', spare: 'battery-spare' },
+    port: { installed: 'port-ok', faulty: 'port-bad', spare: 'port-spare' },
+    tools: ['driver', 'spudger', 'brush', 'multimeter', 'probe'],
+    fasteners: ['screw1', 'screw2', 'screw3', 'screw4'], ledNode: 'led', dustNode: 'dust',
+  },
+  powerTest: { successLines: ['USB: charging 5.0 V', 'BATT: 3.9 V  healthy', 'TEMP: normal', 'Hand it back: OUT tray.'] },
+  geometry: {
+    halfWidth: 0.0675, halfLength: 0.14, intakeYawDeg: 90, bodyThickness: 0.016, coverThickness: 0.004,
+    fastenerPoints: [[-0.05, -0.115], [0.05, -0.115], [-0.05, 0.115], [0.05, 0.115]],
+    batteryBay: [0, 0.0035, 0.03], batterySocket: [0, 0.0085, -0.033], portSocket: [0, 0.0035, 0.112],
+    batteryTab: [0, 0.0016, -0.075], batteryTestPad: [0.04, 0.0063, 0.05], portTestPad: [0.022, 0.0028, -0.012],
+  },
+  parts: [
+    { id: 'phone-body', role: 'shell', assetId: 'phone-body' }, { id: 'phone-back', role: 'cover', assetId: 'phone-back' },
+    { id: 'screw1', role: 'screw', assetId: 'phone-screw' }, { id: 'screw2', role: 'screw', assetId: 'phone-screw' },
+    { id: 'screw3', role: 'screw', assetId: 'phone-screw' }, { id: 'screw4', role: 'screw', assetId: 'phone-screw' },
+    { id: 'battery-ok', role: 'battery', assetId: 'phone-battery' }, { id: 'battery-bad', role: 'battery', assetId: 'phone-battery-bad' },
+    { id: 'battery-spare', role: 'battery', assetId: 'phone-battery' }, { id: 'port-ok', role: 'module', assetId: 'phone-port' },
+    { id: 'port-bad', role: 'module', assetId: 'phone-port-bad' }, { id: 'port-spare', role: 'module', assetId: 'phone-port' },
+    { id: 'plug', role: 'connector', assetId: 'phone-plug' },
+  ],
+  faults: [
+    { id: 'port', label: 'Charge port module', symptom: "Won't charge", affectedPart: 'port', repairSteps: ['diagnose', 'remove-fasteners', 'pry-cover', 'lift-cover', 'disconnect', 'replace-port', 'reconnect', 'close-cover', 'fasten', 'test'], testCondition: 'faulty-port', failureMessage: 'USB: no charge detected' },
+    { id: 'battery', label: 'Swollen battery', symptom: 'Dies at 40%', affectedPart: 'battery', repairSteps: ['diagnose', 'remove-fasteners', 'pry-cover', 'lift-cover', 'disconnect', 'replace-battery', 'reconnect', 'close-cover', 'fasten', 'test'], testCondition: 'faulty-battery', failureMessage: 'BATT: swollen / low V' },
+    { id: 'dust', label: 'Dust build-up', symptom: 'Overheats', affectedPart: 'board', repairSteps: ['diagnose', 'remove-fasteners', 'pry-cover', 'lift-cover', 'clean', 'close-cover', 'fasten', 'test'], testCondition: 'dust-present', failureMessage: 'THERMAL: overheating' },
+  ],
+  stepOrder: ['inspect', 'diagnose', 'remove-fasteners', 'pry-cover', 'lift-cover', 'clean', 'disconnect', 'replace-battery', 'replace-port', 'install-port', 'reconnect', 'close-cover', 'fasten', 'test', 'return'],
+  steps: [
+    { id: 'inspect', hint: 'Pick up and inspect the device.', target: 'phone-body' },
+    { id: 'diagnose', hint: 'Probe the pads with the multimeter to find the fault.', target: 'probe' },
+    { id: 'remove-fasteners', hint: 'Loosen the 4 screws: twist the driver or hold the trigger.', target: 'driver' },
+    { id: 'pry-cover', hint: 'Pry the cover edge with the spudger.', target: 'spudger' }, { id: 'lift-cover', hint: 'Lift off the back cover.' },
+    { id: 'clean', hint: 'Brush the dust off the board.', target: 'brush' }, { id: 'disconnect', hint: 'Pull the battery plug to disconnect power.' },
+    { id: 'replace-battery', hint: 'Swap the swollen battery for the spare.' }, { id: 'replace-port', hint: 'Swap the burnt port module for the spare.' },
+    { id: 'install-port', hint: 'Install the spare port module.' }, { id: 'reconnect', hint: 'Plug the battery connector back in.' },
+    { id: 'close-cover', hint: 'Put the cover back on.' }, { id: 'fasten', hint: 'Seat the screws and tighten them with the driver.' },
+    { id: 'test', hint: 'Press the POWER button on the test rig.' }, { id: 'return', hint: 'Passed! Put the phone in the OUT tray.' },
+  ],
+};
+
+export const DEVICE_REPAIRS: Readonly<Record<string, DeviceRepairDefinition>> = { phone: PHONE_REPAIR };

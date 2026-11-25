@@ -3,6 +3,7 @@ import {
   MeshStandardMaterial, Object3D, Quaternion, RayInteractable, Transform, Vector3,
 } from '@iwsdk/core';
 import layout from '../data/layout.json';
+import { DEVICE_REPAIRS, PHONE_REPAIR, type DeviceRepairDefinition } from '../data/devices.js';
 import { Animated, Pressable, RepairItem, GuidedTarget } from '../components.js';
 import { bus } from '../game/bus.js';
 import type { FaultId, Order } from '../data/repair-data.js';
@@ -11,10 +12,7 @@ import { DesktopInput, clickables } from '../lib/desktop-input.js';
 import { Highlighter } from '../lib/highlighter.js';
 import { chime, pulse, sfx } from '../lib/audio.js';
 
-const PH = layout.phone;
-const T = PH.thick, CT = PH.coverThick, W = PH.halfW, L = PH.halfL;
-const v3 = (a: number[]): Vector3 => new Vector3(a[0], a[1], a[2]);
-const BAY = v3(PH.bayCenter), SOCK_B = v3(PH.socketBattery), SOCK_P = v3(PH.socketPort), TAB = v3(PH.batteryTab), PAD_B = v3(PH.batteryPad), PAD_P = v3(PH.portPad);
+const v3 = (a: readonly number[]): Vector3 => new Vector3(a[0], a[1], a[2]);
 const TIPS: Record<string, Vector3> = { driver: v3(layout.tips.driver), spudger: v3(layout.tips.spudger), brush: v3(layout.tips.brush), probe: v3(layout.tips.probe) };
 const UP = new Vector3(0, 1, 0);
 const TURNS = 1.25, RAD = TURNS * Math.PI * 2, RISE = 0.012, MOTOR = 9; // rad/s
@@ -24,21 +22,24 @@ const TRAY = { x: -0.43, z: -0.3, hx: layout.trayHalf[0], hz: layout.trayHalf[1]
 const OUT = { x: 0.4, z: -0.3, hx: 0.1, hz: 0.08, top: 0.766 };
 const MAT_CENTER = new Vector3(0, MAT.top, -0.46);
 const CHUTE_EXIT = new Vector3(0, 0.79, -0.66);
-const PHONE_Q = new Quaternion().setFromAxisAngle(UP, Math.PI / 2);
 const REST: Record<string, number> = { screw: 0.01, driver: 0.0185, spudger: 0.0085, brush: 0.0078, probe: 0.0085 };
-const REQUIRED = ['phone-body', 'phone-back', 'screw1', 'screw2', 'screw3', 'screw4', 'battery-ok', 'battery-bad', 'battery-spare', 'port-ok', 'port-bad', 'port-spare', 'plug', 'driver', 'spudger', 'brush', 'multimeter', 'probe'];
 
 type Pose = { p: Vector3; q: Quaternion };
 type Item = { id: string; kind: string; e: Entity; home: Pose; parked: boolean };
 type Screw = { in: boolean; p: number };
 
-export class RepairSystem extends createSystem({
+export class DeviceRepairRuntime extends createSystem({
   items: { required: [RepairItem] },
   grabbed: { required: [RepairItem, Grabbed] },
   hovered: { required: [RepairItem, Hovered] },
   pressables: { required: [Pressable] },
   guided: { required: [GuidedTarget, RepairItem] },
 }) {
+  private device: DeviceRepairDefinition = PHONE_REPAIR;
+  private readonly bay = new Vector3(); private readonly batterySocket = new Vector3(); private readonly portSocket = new Vector3();
+  private readonly batteryTab = new Vector3(); private readonly batteryTestPad = new Vector3(); private readonly portTestPad = new Vector3();
+  private readonly deviceOrientation = new Quaternion();
+  private requiredIds: string[] = [];
   private readonly items = new Map<string, Item>();
   private readonly objToEntity = new Map<Object3D, Entity>();
   private readonly hl = new Highlighter();
@@ -79,9 +80,12 @@ export class RepairSystem extends createSystem({
 
   // ====================================================================== setup
   init(): void {
+    const profileIssues = this.validateDeviceDefinition(PHONE_REPAIR);
+    if (profileIssues.length) { console.error('DeviceRepairRuntime: invalid phone data:', profileIssues.join('; ')); return; }
+    this.configureDevice(PHONE_REPAIR);
     for (const e of this.queries.items.entities) this.reg(e);
     this.cleanupFuncs.push(this.queries.items.subscribe('qualify', (e) => this.reg(e)));
-    const missing = REQUIRED.filter((id) => !this.items.has(id));
+    const missing = this.requiredIds.filter((id) => !this.items.has(id));
     if (missing.length) { console.error('RepairSystem: missing scene items:', missing.join(', ')); return; }
     this.cleanupFuncs.push(
       this.queries.grabbed.subscribe('qualify', (e) => this.grab(e)),
@@ -134,11 +138,9 @@ export class RepairSystem extends createSystem({
     this.drawMeter('--.--', 'TOUCH A PAD', '#2b3d1f');
     const rig = this.world.getSceneObject('rig') as Object3D | undefined;
     for (const n of ['led1', 'led2', 'led3']) { const m = this.ownMaterial(rig?.getObjectByName(n)); if (m) this.leds.set(n, m); }
-    this.phoneLed = this.ownMaterial(this.items.get('phone-back')!.e.object3D?.getObjectByName('led'));
-    this.dustMat = this.ownMaterial(this.items.get('phone-body')!.e.object3D?.getObjectByName('dust'));
-    if (this.dustMat) { this.dustMat.transparent = true; this.dustMat.depthWrite = false; this.dustMat.side = DoubleSide; this.dustMat.opacity = 0; }
+    this.setupDeviceMaterials();
 
-    for (const id of REQUIRED) { const it = this.items.get(id)!; if (it.kind !== 'tool') this.park(it); }
+    for (const it of this.items.values()) if (it.kind !== 'tool') this.park(it);
     this.ready = true;
     this.refreshSpares();
     bus.emit('monitor', { title: 'REBOOT LAB', lines: ['READY.', 'Press the green button', 'to accept a job.'], tone: 'idle' });
@@ -149,6 +151,51 @@ export class RepairSystem extends createSystem({
     const m = (o.material as MeshStandardMaterial).clone();
     o.material = m;
     return m;
+  }
+
+  private configureDevice(device: DeviceRepairDefinition): void {
+    this.device = device;
+    const g = device.geometry;
+    this.bay.set(...g.batteryBay); this.batterySocket.set(...g.batterySocket); this.portSocket.set(...g.portSocket);
+    this.batteryTab.set(...g.batteryTab); this.batteryTestPad.set(...g.batteryTestPad); this.portTestPad.set(...g.portTestPad);
+    this.deviceOrientation.setFromAxisAngle(UP, g.intakeYawDeg * Math.PI / 180);
+    this.requiredIds = [...device.parts.map((part) => part.id), ...device.scene.tools];
+    this.screws = device.scene.fasteners.map(() => ({ in: true, p: 0 }));
+    this.holeAssigned = g.fastenerPoints.map((_, index) => index);
+  }
+
+  private validateDeviceDefinition(device: DeviceRepairDefinition): string[] {
+    const issues: string[] = [];
+    const partIds = new Set(device.parts.map((part) => part.id));
+    const stepIds = new Set(device.steps.map((step) => step.id));
+    if (partIds.size !== device.parts.length) issues.push('part ids must be unique');
+    if (device.geometry.fastenerPoints.length !== device.scene.fasteners.length) issues.push('fastener ids and hole points must match');
+    for (const id of [device.scene.body, device.scene.cover, device.scene.connector, ...device.scene.fasteners, ...Object.values(device.scene.battery), ...Object.values(device.scene.port)]) {
+      if (!partIds.has(id)) issues.push(`scene part "${id}" is missing from parts`);
+    }
+    for (const id of device.stepOrder) if (!stepIds.has(id)) issues.push(`step order refers to missing step "${id}"`);
+    for (const fault of device.faults) for (const id of fault.repairSteps) if (!stepIds.has(id)) issues.push(`fault "${fault.id}" refers to missing step "${id}"`);
+    for (const step of device.steps) if (step.target && !device.scene.tools.includes(step.target) && !partIds.has(step.target)) issues.push(`step "${step.id}" targets missing item "${step.target}"`);
+    return issues;
+  }
+
+  private faultDefinition(id: FaultId): DeviceRepairDefinition['faults'][number] | undefined {
+    return this.device.faults.find((fault) => fault.id === id);
+  }
+  private faultRequiresStep(stepId: string): boolean {
+    return this.faults.some((id) => this.faultDefinition(id)?.repairSteps.includes(stepId));
+  }
+  private faultAffects(partId: string): boolean {
+    return this.faults.some((id) => this.faultDefinition(id)?.affectedPart === partId);
+  }
+  private faultHasTestCondition(condition: DeviceRepairDefinition['faults'][number]['testCondition']): boolean {
+    return this.faults.some((id) => this.faultDefinition(id)?.testCondition === condition);
+  }
+
+  private setupDeviceMaterials(): void {
+    this.phoneLed = this.ownMaterial(this.items.get(this.device.scene.cover)?.e.object3D?.getObjectByName(this.device.scene.ledNode));
+    this.dustMat = this.ownMaterial(this.items.get(this.device.scene.body)?.e.object3D?.getObjectByName(this.device.scene.dustNode));
+    if (this.dustMat) { this.dustMat.transparent = true; this.dustMat.depthWrite = false; this.dustMat.side = DoubleSide; this.dustMat.opacity = 0; }
   }
 
   private reg(e: Entity): void {
@@ -185,7 +232,7 @@ export class RepairSystem extends createSystem({
   /** world point -> body-local */
   private toLoc(w: Vector3, out: Vector3): Vector3 { return out.copy(w).sub(this.bp).applyQuaternion(this.bqi); }
   private refreshBody(): void {
-    const o = this.it('phone-body').e.object3D!;
+    const o = this.it(this.device.scene.body).e.object3D!;
     o.getWorldPosition(this.bp); o.getWorldQuaternion(this.bq); this.bqi.copy(this.bq).invert();
   }
   private surfaceAt(x: number, z: number): number {
@@ -195,37 +242,48 @@ export class RepairSystem extends createSystem({
     if (x >= MAT.minX && x <= MAT.maxX && z >= MAT.minZ && z <= MAT.maxZ) y = MAT.top;
     if (Math.abs(x - TRAY.x) < TRAY.hx && Math.abs(z - TRAY.z) < TRAY.hz) y = TRAY.top;
     if (Math.abs(x - OUT.x) < OUT.hx && Math.abs(z - OUT.z) < OUT.hz) y = OUT.top;
-    if (this.active && !this.it('phone-body').parked) {
+    if (this.active && !this.it(this.device.scene.body).parked) {
       this.a.set(x, this.bp.y, z); this.toLoc(this.a, this.b);
-      if (Math.abs(this.b.x) < W && Math.abs(this.b.z) < L) y = Math.max(y, this.bp.y + (this.covered ? T + CT : 0.01));
+      const g = this.device.geometry;
+      if (Math.abs(this.b.x) < g.halfWidth && Math.abs(this.b.z) < g.halfLength) y = Math.max(y, this.bp.y + (this.covered ? g.bodyThickness + g.coverThickness : 0.01));
     }
     return y;
   }
 
   // ====================================================================== orders
   private startOrder(o: Order): void {
+    const device = DEVICE_REPAIRS[o.deviceId ?? 'phone'];
+    if (!device) { console.error(`DeviceRepairRuntime: unknown device "${o.deviceId}"`); return; }
+    const profileIssues = this.validateDeviceDefinition(device);
+    if (profileIssues.length) { console.error(`DeviceRepairRuntime: invalid ${device.name} data:`, profileIssues.join('; ')); return; }
+    const changedDevice = device.id !== this.device.id;
+    const missing = [...device.parts.map((part) => part.id), ...device.scene.tools].filter((id) => !this.items.has(id));
+    if (missing.length) { console.error(`DeviceRepairRuntime: missing ${device.name} scene items:`, missing.join(', ')); return; }
+    this.configureDevice(device);
+    if (changedDevice) this.setupDeviceMaterials();
     this.order = o; this.faults = o.faults; this.active = true; this.passed = false;
-    this.screws.forEach((s) => { s.in = true; s.p = 0; });
+    this.screws = this.device.scene.fasteners.map(() => ({ in: true, p: 0 }));
     this.covered = true; this.popped = false; this.closing = false; this.pryT = 0; this.plugged = true;
-    this.dust = o.faults.includes('dust') ? 1 : 0;
-    this.battery = o.faults.includes('battery') ? 'battery-bad' : 'battery-ok';
-    this.port = o.faults.includes('port') ? 'port-bad' : 'port-ok';
+    this.dust = this.faultHasTestCondition('dust-present') ? 1 : 0;
+    this.battery = this.faultAffects('battery') ? this.device.scene.battery.faulty : this.device.scene.battery.installed;
+    this.port = this.faultAffects('port') ? this.device.scene.port.faulty : this.device.scene.port.installed;
     this.usedMeter = false; this.extraSwaps = 0; this.mistakes = 0; this.startT = this.now; this.removedOriginal.clear(); this.trayScrews.clear(); this.loggedBrush = false;
-    for (const id of ['battery-ok', 'battery-bad', 'port-ok', 'port-bad']) { const it = this.it(id); if (id !== this.battery && id !== this.port) this.park(it); else this.unpark(it); }
-    for (const id of ['phone-body', 'phone-back', 'screw1', 'screw2', 'screw3', 'screw4', 'plug']) this.unpark(this.it(id));
-    this.setPose(this.it('phone-body').e, CHUTE_EXIT, PHONE_Q);
+    for (const it of this.items.values()) if (it.kind !== 'tool') this.park(it);
+    for (const id of [this.device.scene.battery.installed, this.device.scene.battery.faulty, this.device.scene.port.installed, this.device.scene.port.faulty]) { const it = this.it(id); if (id !== this.battery && id !== this.port) this.park(it); else this.unpark(it); }
+    for (const id of [this.device.scene.body, this.device.scene.cover, ...this.device.scene.fasteners, this.device.scene.connector]) this.unpark(this.it(id));
+    this.setPose(this.it(this.device.scene.body).e, CHUTE_EXIT, this.deviceOrientation);
     this.slide = { t: 0, from: CHUTE_EXIT.clone() };
     this.refreshSpares();
     this.setLed(this.phoneLed, 'off'); for (const n of ['led1', 'led2', 'led3']) this.setLed(this.leds.get(n) ?? null, 'off');
     bus.emit('anim', { node: 'intake-chute', clip: 'open' }); sfx.pop();
-    bus.emit('log', `New job: ${o.customer.name}'s phone`);
+    bus.emit('log', `New job: ${o.customer.name}'s ${this.device.name.toLowerCase()}`);
     bus.emit('monitor', { title: 'JOB ACCEPTED', lines: [`Owner: ${o.customer.name}`, 'Symptom reported.', 'Diagnose, then repair.'], tone: 'idle' });
     this.lastHint = '';
   }
 
   private refreshSpares(): void {
     for (const kind of ['battery', 'port'] as const) {
-      const it = this.it(`${kind}-spare`), installed = (kind === 'battery' ? this.battery : this.port) === it.id;
+      const ids = this.device.scene[kind], it = this.it(ids.spare), installed = (kind === 'battery' ? this.battery : this.port) === it.id;
       if (installed) continue;
       if (this.stock[kind] > 0 && it.parked) this.toHome(it);
       else if (this.stock[kind] <= 0) this.park(it);
@@ -250,17 +308,19 @@ export class RepairSystem extends createSystem({
     const s = this.screwIndex(id);
     let placed = false;
     if (s >= 0) placed = this.releaseScrew(it, s);
-    else if (id === 'phone-back') placed = this.releaseCover(it);
-    else if (id === 'plug') placed = this.releasePlug(it);
-    else if (id.startsWith('battery') || id.startsWith('port')) placed = this.releasePart(it);
+    else if (id === this.device.scene.cover) placed = this.releaseCover(it);
+    else if (id === this.device.scene.connector) placed = this.releasePlug(it);
+    else if (this.isBatteryPart(id) || this.isPortPart(id)) placed = this.releasePart(it);
     if (placed) return;
     if (it.kind === 'tool') { if (this.surfaceAt(this.c.x, this.c.z) > 0) this.settling.set(e, { vy: 0, rest: REST[id] ?? 0 }); else { this.returning.set(e, { t: 0, from: this.worldPose(e.object3D) }); } return; }
     this.settling.set(e, { vy: 0, rest: REST[it.kind] ?? REST[id] ?? 0 });
   }
 
-  private screwIndex(id: string): number { return id.startsWith('screw') ? Number(id.slice(5)) - 1 : -1; }
+  private screwIndex(id: string): number { return this.device.scene.fasteners.indexOf(id); }
+  private isBatteryPart(id: string): boolean { const p = this.device.scene.battery; return id === p.installed || id === p.faulty || id === p.spare; }
+  private isPortPart(id: string): boolean { const p = this.device.scene.port; return id === p.installed || id === p.faulty || id === p.spare; }
 
-  private holeWorld(i: number, out: Vector3): Vector3 { return this.loc(this.d.set(PH.holes[i][0], T + CT, PH.holes[i][1]), out); }
+  private holeWorld(i: number, out: Vector3): Vector3 { const p = this.device.geometry.fastenerPoints[i]; return this.loc(this.d.set(p[0], this.device.geometry.bodyThickness + this.device.geometry.coverThickness, p[1]), out); }
 
   private releaseScrew(it: Item, i: number): boolean {
     const pos = this.c; // screw origin (head bottom)
@@ -274,20 +334,20 @@ export class RepairSystem extends createSystem({
     if (this.covered && !this.screws[i].in) {
       this.refreshBody();
       let bestH = -1, bd = 1e9;
-      for (let h = 0; h < 4; h++) { if (this.screws.some((s, k) => s.in && this.holeAssigned[k] === h)) continue; this.holeWorld(h, this.b); const dd = Math.hypot(pos.x - this.b.x, pos.z - this.b.z); if (dd < bd && Math.abs(pos.y - (this.b.y + RISE)) < 0.04) { bd = dd; bestH = h; } }
+      for (let h = 0; h < this.device.geometry.fastenerPoints.length; h++) { if (this.screws.some((s, k) => s.in && this.holeAssigned[k] === h)) continue; this.holeWorld(h, this.b); const dd = Math.hypot(pos.x - this.b.x, pos.z - this.b.z); if (dd < bd && Math.abs(pos.y - (this.b.y + RISE)) < 0.04) { bd = dd; bestH = h; } }
       this.a.set(0, 1, 0).applyQuaternion(this.qa.copy(it.e.object3D!.getWorldQuaternion(this.qb)));
       if (bestH >= 0 && bd < 0.022 && this.a.dot(UP) > 0.75) { this.screws[i].in = true; this.screws[i].p = 1; this.holeAssigned[i] = bestH; sfx.snap(); pulse(this.input?.gamepads?.right, 0.4, 25); bus.emit('log', `Seated screw ${i + 1}`); return true; }
     }
     return false;
   }
-  private readonly holeAssigned = [0, 1, 2, 3];
+  private holeAssigned = [0, 1, 2, 3];
   private readonly trayMap = new Map<string, number>();
   private slotOf(id: string): number { return this.trayMap.get(id) ?? -1; }
 
   private releaseCover(it: Item): boolean {
     if (this.covered) return false;
     this.refreshBody();
-    this.loc(this.d.set(0, T, 0), this.b);
+    this.loc(this.d.set(0, this.device.geometry.bodyThickness, 0), this.b);
     this.c.copy(it.e.object3D!.getWorldPosition(this.a));
     if (Math.hypot(this.c.x - this.b.x, this.c.z - this.b.z) < 0.05 && Math.abs(this.c.y - this.b.y) < 0.045) {
       this.covered = true; this.popped = false; this.closing = true; sfx.snap(); pulse(this.input?.gamepads?.right, 0.5, 40); bus.emit('log', 'Put the cover back on');
@@ -297,16 +357,16 @@ export class RepairSystem extends createSystem({
   }
   private releasePlug(it: Item): boolean {
     if (this.plugged || !this.battery) return false;
-    this.refreshBody(); this.loc(SOCK_B, this.b);
+    this.refreshBody(); this.loc(this.batterySocket, this.b);
     it.e.object3D!.getWorldPosition(this.c);
     if (this.c.distanceTo(this.b) < 0.03) { this.plugged = true; sfx.snap(); pulse(this.input?.gamepads?.right, 0.5, 40); bus.emit('log', 'Reconnected the battery'); return true; }
     return false;
   }
   private releasePart(it: Item): boolean {
     if (this.covered) return false;
-    const isBat = it.id.startsWith('battery');
+    const isBat = this.isBatteryPart(it.id);
     if (isBat ? this.battery : this.port) return false;
-    this.refreshBody(); this.loc(isBat ? BAY : SOCK_P, this.b);
+    this.refreshBody(); this.loc(isBat ? this.bay : this.portSocket, this.b);
     it.e.object3D!.getWorldPosition(this.c);
     if (Math.hypot(this.c.x - this.b.x, this.c.z - this.b.z) < (isBat ? 0.045 : 0.035) && Math.abs(this.c.y - this.b.y) < 0.05) {
       if (isBat) this.battery = it.id; else this.port = it.id;
@@ -326,11 +386,11 @@ export class RepairSystem extends createSystem({
     this.desk.update();
     this.hl.update(time);
     if (!this.active) { this.updateMotion(dt); return; }
-    const body = this.it('phone-body');
+    const body = this.it(this.device.scene.body);
     if (this.slide && !this.isHeld(body.e)) {
       this.slide.t = Math.min(1, this.slide.t + dt / 1.5);
       const k = 1 - Math.pow(1 - this.slide.t, 3);
-      this.setPose(body.e, this.a.copy(this.slide.from).lerp(MAT_CENTER, k).add(this.b.set(0, Math.sin(k * Math.PI) * 0.01, 0)), PHONE_Q);
+      this.setPose(body.e, this.a.copy(this.slide.from).lerp(MAT_CENTER, k).add(this.b.set(0, Math.sin(k * Math.PI) * 0.01, 0)), this.deviceOrientation);
       if (this.slide.t >= 1) this.slide = null;
     } else if (this.slide) this.slide = null;
     this.refreshBody();
@@ -352,22 +412,22 @@ export class RepairSystem extends createSystem({
 
   /** Release locked parts from the hand and detect parts the player pulls out. */
   private heldChecks(): void {
-    const cover = this.it('phone-back');
-    if (this.covered && this.held('phone-back')) {
-      this.loc(this.d.set(0, T, 0), this.b); cover.e.object3D!.getWorldPosition(this.c);
+    const cover = this.it(this.device.scene.cover);
+    if (this.covered && this.held(this.device.scene.cover)) {
+      this.loc(this.d.set(0, this.device.geometry.bodyThickness, 0), this.b); cover.e.object3D!.getWorldPosition(this.c);
       if (this.coverLocked()) { if (this.c.distanceTo(this.b) > 0.015) this.warn(this.screws.some((s) => s.in && s.p < 0.9) ? 'Screws still hold the cover!' : 'Pry the cover clips with the spudger first.'); }
       else if (this.c.distanceTo(this.b) > 0.05) { this.covered = false; sfx.pop(); bus.emit('log', 'Lifted off the back cover'); }
     }
-    for (let i = 0; i < 4; i++) if (this.screws[i].in && this.held(`screw${i + 1}`) && this.screws[i].p < 0.9) this.warn('Use the screwdriver: twist it, or hold the trigger.');
+    for (let i = 0; i < this.device.scene.fasteners.length; i++) if (this.screws[i].in && this.held(this.device.scene.fasteners[i]) && this.screws[i].p < 0.9) this.warn('Use the screwdriver: twist it, or hold the trigger.');
     if (this.battery && this.held(this.battery)) {
       if (this.plugged) this.warn('Disconnect the battery plug first!');
-      else { this.loc(BAY, this.b); this.it(this.battery).e.object3D!.getWorldPosition(this.c); if (this.c.distanceTo(this.b) > 0.05) { this.removedOriginal.add(this.battery.replace('-bad', '-ok')); this.battery = null; sfx.pop(); bus.emit('log', 'Took the battery out'); } }
+      else { this.loc(this.bay, this.b); this.it(this.battery).e.object3D!.getWorldPosition(this.c); if (this.c.distanceTo(this.b) > 0.05) { this.removedOriginal.add(this.device.scene.battery.installed); this.battery = null; sfx.pop(); bus.emit('log', 'Took the battery out'); } }
     }
     if (this.port && this.held(this.port)) {
       if (this.plugged) this.warn('Unplug the battery before touching the port!');
-      else { this.loc(SOCK_P, this.b); this.it(this.port).e.object3D!.getWorldPosition(this.c); if (this.c.distanceTo(this.b) > 0.04) { this.removedOriginal.add(this.port.replace('-bad', '-ok')); this.port = null; sfx.pop(); bus.emit('log', 'Pulled the charge-port module out'); } }
+      else { this.loc(this.portSocket, this.b); this.it(this.port).e.object3D!.getWorldPosition(this.c); if (this.c.distanceTo(this.b) > 0.04) { this.removedOriginal.add(this.device.scene.port.installed); this.port = null; sfx.pop(); bus.emit('log', 'Pulled the charge-port module out'); } }
     }
-    if (this.plugged && this.held('plug')) { this.loc(SOCK_B, this.b); this.it('plug').e.object3D!.getWorldPosition(this.c); if (this.c.distanceTo(this.b) > 0.028) { this.plugged = false; sfx.pop(); pulse(this.input?.gamepads?.right, 0.4, 40); bus.emit('log', 'Disconnected the battery'); } }
+    if (this.plugged && this.held(this.device.scene.connector)) { this.loc(this.batterySocket, this.b); this.it(this.device.scene.connector).e.object3D!.getWorldPosition(this.c); if (this.c.distanceTo(this.b) > 0.028) { this.plugged = false; sfx.pop(); pulse(this.input?.gamepads?.right, 0.4, 40); bus.emit('log', 'Disconnected the battery'); } }
   }
 
   /** Installed parts follow the phone body (and are held in place while locked). */
@@ -378,19 +438,19 @@ export class RepairSystem extends createSystem({
       this.setPose(it.e, this.a, this.qa);
     };
     const free = (id: string, locked: boolean): boolean => !this.held(id) || locked;
-    if (this.covered && free('phone-back', this.coverLocked())) put('phone-back', this.d.set(0, T, 0));
-    for (let i = 0; i < 4; i++) {
-      const s = this.screws[i], id = `screw${i + 1}`;
+    if (this.covered && free(this.device.scene.cover, this.coverLocked())) put(this.device.scene.cover, this.d.set(0, this.device.geometry.bodyThickness, 0));
+    for (let i = 0; i < this.device.scene.fasteners.length; i++) {
+      const s = this.screws[i], id = this.device.scene.fasteners[i];
       if (!s.in || !this.covered || this.it(id).parked) continue;
       if (!free(id, s.p < 0.9)) continue;
-      const h = PH.holes[this.holeAssigned[i]];
+      const h = this.device.geometry.fastenerPoints[this.holeAssigned[i]];
       this.eu.set(0, -s.p * RAD, 0); this.qb.setFromEuler(this.eu);
-      put(id, this.c.set(h[0], T + CT + s.p * RISE, h[1]), this.qb);
+      put(id, this.c.set(h[0], this.device.geometry.bodyThickness + this.device.geometry.coverThickness + s.p * RISE, h[1]), this.qb);
     }
-    if (this.battery && free(this.battery, this.plugged)) put(this.battery, BAY);
-    if (this.port && free(this.port, this.plugged)) put(this.port, SOCK_P);
-    if (this.plugged && this.battery && free('plug', false)) put('plug', SOCK_B);
-    this.it('phone-body').e.object3D!.getWorldPosition(this.bp);
+    if (this.battery && free(this.battery, this.plugged)) put(this.battery, this.bay);
+    if (this.port && free(this.port, this.plugged)) put(this.port, this.portSocket);
+    if (this.plugged && this.battery && free(this.device.scene.connector, false)) put(this.device.scene.connector, this.batterySocket);
+    this.it(this.device.scene.body).e.object3D!.getWorldPosition(this.bp);
   }
 
   // ====================================================================== tools
@@ -436,9 +496,9 @@ export class RepairSystem extends createSystem({
     if (this.desk.carried?.entity === it.e && this.desk.twistTicks) { total += this.desk.twistTicks * -0.6; this.desk.twistTicks = 0; }
     // which screw is the bit on?
     let target = -1, bd = 0.02;
-    if (this.covered) for (let i = 0; i < 4; i++) {
+    if (this.covered) for (let i = 0; i < this.device.scene.fasteners.length; i++) {
       const s = this.screws[i]; if (!s.in) continue;
-      const so = this.it(`screw${i + 1}`).e.object3D!; so.getWorldPosition(this.c); so.getWorldQuaternion(this.qa);
+      const so = this.it(this.device.scene.fasteners[i]).e.object3D!; so.getWorldPosition(this.c); so.getWorldQuaternion(this.qa);
       this.c.add(this.d.set(0, 0.004, 0).applyQuaternion(this.qa));
       const dd = tip.distanceTo(this.c), up = this.d.set(0, 1, 0).applyQuaternion(this.qa);
       if (dd < bd && fwd.dot(up) < -0.7) { bd = dd; target = i; }
@@ -449,7 +509,7 @@ export class RepairSystem extends createSystem({
     const s = this.screws[target], before = Math.floor(s.p * 12);
     s.p = Math.max(0, Math.min(1, s.p - total / RAD));
     if (Math.floor(s.p * 12) !== before) { sfx.tick(); pulse(this.input?.gamepads?.right, 0.25, 12); pulse(this.input?.gamepads?.left, 0.25, 12); }
-    if (s.p >= 1) { s.in = false; this.settling.set(this.it(`screw${target + 1}`).e, { vy: 0.9, rest: REST.screw }); sfx.pop(); bus.emit('log', `Removed screw ${target + 1}`); }
+    if (s.p >= 1) { s.in = false; this.settling.set(this.it(this.device.scene.fasteners[target]).e, { vy: 0.9, rest: REST.screw }); sfx.pop(); bus.emit('log', `Removed screw ${target + 1}`); }
     else if (s.p <= 0.001 && this.closing) { if (this.screws.every((x) => x.in && x.p < 0.05)) bus.emit('log', 'All screws tightened'); }
   }
 
@@ -458,15 +518,16 @@ export class RepairSystem extends createSystem({
     const tip = this.a; this.tipOf('spudger', tip);
     const sp = this.speedOf('spudger', tip, dt);
     this.toLoc(tip, this.b);
-    const inside = Math.abs(this.b.x) < W + 0.02 && Math.abs(this.b.z) < L + 0.02, rim = Math.min(W - Math.abs(this.b.x), L - Math.abs(this.b.z)) < 0.03;
-    if (inside && rim && Math.abs(this.b.y - (T + CT)) < 0.03 && sp > 0.04) {
+    const g = this.device.geometry;
+    const inside = Math.abs(this.b.x) < g.halfWidth + 0.02 && Math.abs(this.b.z) < g.halfLength + 0.02, rim = Math.min(g.halfWidth - Math.abs(this.b.x), g.halfLength - Math.abs(this.b.z)) < 0.03;
+    if (inside && rim && Math.abs(this.b.y - (g.bodyThickness + g.coverThickness)) < 0.03 && sp > 0.04) {
       this.pryT += dt; pulse(this.input?.gamepads?.right, 0.2, 10);
       if (this.pryT > 0.6) { this.popped = true; sfx.pop(); pulse(this.input?.gamepads?.right, 0.8, 70); bus.emit('log', 'Popped the cover clips'); }
     }
   }
 
   private updateBrush(dt: number): void {
-    if (!this.held('brush') || this.covered || this.dust <= 0) return;
+    if (!this.held('brush') || this.covered || this.dust <= 0 || !this.faultRequiresStep('clean')) return;
     const tip = this.a; this.tipOf('brush', tip);
     const sp = this.speedOf('brush', tip, dt);
     this.toLoc(tip, this.b);
@@ -483,13 +544,14 @@ export class RepairSystem extends createSystem({
     const tip = this.a; this.tipOf('probe', tip);
     let reading = '', label = '', tone = '#2b3d1f', hit = false;
     for (const it of this.items.values()) {
-      if (it.parked || !(it.id.startsWith('battery') || it.id.startsWith('port')) || !it.e.object3D) continue;
-      const pad = it.id.startsWith('battery') ? PAD_B : PAD_P;
+      const isBattery = this.isBatteryPart(it.id), isPort = this.isPortPart(it.id);
+      if (it.parked || (!isBattery && !isPort) || !it.e.object3D) continue;
+      const pad = isBattery ? this.batteryTestPad : this.portTestPad;
       it.e.object3D.localToWorld(this.c.copy(pad));
       if (tip.distanceTo(this.c) < 0.014) {
         hit = true; this.usedMeter = true;
-        const bad = it.id.endsWith('bad'), bat = it.id.startsWith('battery');
-        reading = bat ? (bad ? '2.10' : '3.92') : (bad ? '0.00' : '5.02'); label = bat ? 'BATTERY PAD' : 'PORT PAD';
+        const bad = it.id === this.device.scene.battery.faulty || it.id === this.device.scene.port.faulty;
+        reading = isBattery ? (bad ? '2.10' : '3.92') : (bad ? '0.00' : '5.02'); label = isBattery ? 'BATTERY PAD' : 'PORT PAD';
         if (this.upgrades.has('magnifier')) label += bad ? '  FAULT' : '  OK';
         tone = bad ? '#7a1f1f' : '#1f5a2b'; break;
       }
@@ -538,9 +600,9 @@ export class RepairSystem extends createSystem({
 
   private updateCables(): void {
     // battery ribbon: tab of the installed battery -> plug
-    const bat = this.battery ? this.it(this.battery) : null, plug = this.it('plug');
+    const bat = this.battery ? this.it(this.battery) : null, plug = this.it(this.device.scene.connector);
     if (bat && !bat.parked && !plug.parked && this.active) {
-      bat.e.object3D!.localToWorld(this.a.copy(TAB));
+      bat.e.object3D!.localToWorld(this.a.copy(this.batteryTab));
       plug.e.object3D!.localToWorld(this.b.set(0, 0.0015, 0.008));
       if (!this.plugged && !this.isHeld(plug.e)) {
         // tether: the ribbon is 0.1 m long; settle the plug near the battery if it was dropped too far
@@ -558,7 +620,7 @@ export class RepairSystem extends createSystem({
   }
 
   private checkOutTray(): void {
-    const body = this.it('phone-body');
+    const body = this.it(this.device.scene.body);
     if (!this.active || this.isHeld(body.e) || this.slide) return;
     body.e.object3D!.getWorldPosition(this.a);
     if (Math.abs(this.a.x - OUT.x) < OUT.hx && Math.abs(this.a.z - OUT.z) < OUT.hz && this.surfaceAt(this.a.x, this.a.z) > 0 && this.a.y < 0.82) this.handBack();
@@ -572,12 +634,14 @@ export class RepairSystem extends createSystem({
       this.slide = { t: 0, from: this.a.clone() }; this.mistakes++; return;
     }
     const used: string[] = [];
-    if (this.battery === 'battery-spare') used.push('battery'); if (this.port === 'port-spare') used.push('port');
+    if (this.battery === this.device.scene.battery.spare) used.push('battery'); if (this.port === this.device.scene.port.spare) used.push('port');
     for (const k of used) bus.emit('spare-used', k);
     this.active = false;
-    for (const id of REQUIRED) { const it = this.it(id); if (it.kind !== 'tool') this.park(it); }
+    for (const id of this.requiredIds) { const it = this.it(id); if (!this.device.scene.tools.includes(id)) this.park(it); }
     this.ribbon.visible = false;
-    bus.emit('phone-returned', { passed: true, seconds, target: this.order?.targetSeconds ?? 180, usedMeter: this.usedMeter, extraSwaps: this.extraSwaps, mistakes: this.mistakes, order: this.order });
+    const result = { passed: true, seconds, target: this.order?.targetSeconds ?? 180, usedMeter: this.usedMeter, extraSwaps: this.extraSwaps, mistakes: this.mistakes, order: this.order, deviceId: this.device.id };
+    bus.emit('device-returned', result);
+    if (this.device.id === 'phone') bus.emit('phone-returned', result);
     this.refreshSpares();
   }
 
@@ -599,44 +663,53 @@ export class RepairSystem extends createSystem({
       led('led1', 'amber'); led('led2', 'off'); led('led3', 'off');
       bus.emit('monitor', { title: 'POWER TEST', lines: ['Phone is not closed up.', why], tone: 'warn' }); bus.emit('hint', `Not ready: ${why}`); return;
     }
-    const reasons: string[] = [];
-    if (this.port === 'port-bad') reasons.push('USB: no charge detected');
-    if (this.battery === 'battery-bad') reasons.push('BATT: swollen / low V');
-    if (this.dust > 0.25) reasons.push('THERMAL: overheating');
-    led('led1', 'green'); led('led2', this.port === 'port-bad' ? 'red' : 'green'); led('led3', this.dust > 0.25 ? 'amber' : this.battery === 'battery-bad' ? 'red' : 'green');
+    const faultActive = (condition: string): boolean => {
+      if (condition === 'faulty-port') return this.port === this.device.scene.port.faulty;
+      if (condition === 'faulty-battery') return this.battery === this.device.scene.battery.faulty;
+      if (condition === 'dust-present') return this.dust > 0.25;
+      return false;
+    };
+    const activeFaults = this.device.faults.filter((fault) => this.faults.some((id) => id === fault.id) && faultActive(fault.testCondition));
+    const reasons = activeFaults.map((fault) => fault.failureMessage);
+    led('led1', 'green');
+    led('led2', activeFaults.some((fault) => fault.testCondition === 'faulty-port') ? 'red' : 'green');
+    led('led3', activeFaults.some((fault) => fault.testCondition === 'dust-present') ? 'amber' : activeFaults.some((fault) => fault.testCondition === 'faulty-battery') ? 'red' : 'green');
     if (reasons.length) {
       this.mistakes++; this.passed = false; this.setLed(this.phoneLed, 'red');
       bus.emit('monitor', { title: 'TEST FAILED', lines: reasons, tone: 'bad' }); bus.emit('log', 'Power test FAILED'); bus.emit('hint', 'Something is still wrong. Re-check the pads with the multimeter.'); sfx.bad();
     } else {
       this.passed = true; this.setLed(this.phoneLed, 'green'); chime();
-      bus.emit('monitor', { title: 'BOOT OK', lines: ['USB: charging 5.0 V', 'BATT: 3.9 V  healthy', 'TEMP: normal', 'Hand it back: OUT tray.'], tone: 'ok' }); bus.emit('log', 'Power test PASSED'); bus.emit('hint', 'Perfect! Put the phone in the OUT tray.');
+      bus.emit('monitor', { title: 'BOOT OK', lines: [...this.device.powerTest.successLines], tone: 'ok' }); bus.emit('log', 'Power test PASSED'); bus.emit('hint', `Perfect! Put the ${this.device.name.toLowerCase()} in the OUT tray.`);
     }
   }
 
   // ====================================================================== hints
   private pushHint(): void {
-    let text = '', target = '';
+    let stepId = '';
     const screwsOut = this.screws.every((s) => !s.in || s.p >= 0.999);
-    if (this.passed) { text = 'Passed! Put the phone in the OUT tray.'; }
-    else if (this.covered && !screwsOut && !this.closing) { text = 'Loosen the 4 screws: twist the driver or hold the trigger.'; target = 'driver'; }
-    else if (this.covered && !this.popped && !this.closing && screwsOut) { text = 'Pry the cover edge with the spudger.'; target = 'spudger'; }
-    else if (this.covered && this.popped) { text = 'Lift the back cover off.'; }
+    if (this.passed) stepId = 'return';
+    else if (this.covered && !screwsOut && !this.closing) stepId = 'remove-fasteners';
+    else if (this.covered && !this.popped && !this.closing && screwsOut) stepId = 'pry-cover';
+    else if (this.covered && this.popped) stepId = 'lift-cover';
     else if (!this.covered) {
-      if (this.plugged && this.faults.length && !this.usedMeter) { text = 'Probe the pads with the multimeter to find the fault.'; target = 'probe'; }
-      else if (this.dust > 0.1 && this.faults.includes('dust')) { text = 'Brush the dust off the board.'; target = 'brush'; }
-      else if (this.plugged && (this.faults.includes('port') || this.faults.includes('battery'))) { text = 'Pull the battery plug to disconnect power.'; }
-      else if (!this.plugged && this.battery === 'battery-bad') { text = 'Swap the swollen battery for the spare.'; }
-      else if (!this.plugged && this.port === 'port-bad') { text = 'Swap the burnt port module for the spare.'; }
-      else if (!this.plugged && this.faults.includes('port') && !this.port) { text = 'Install the spare port module.'; }
-      else if (!this.plugged) { text = 'Plug the battery connector back in.'; }
-      else text = 'Put the cover back on.';
+      if (this.plugged && this.faultRequiresStep('diagnose') && !this.usedMeter) stepId = 'diagnose';
+      else if (this.dust > 0.1 && this.faultRequiresStep('clean')) stepId = 'clean';
+      else if (this.plugged && this.faultRequiresStep('disconnect')) stepId = 'disconnect';
+      else if (!this.plugged && this.battery === this.device.scene.battery.faulty) stepId = 'replace-battery';
+      else if (!this.plugged && this.port === this.device.scene.port.faulty) stepId = 'replace-port';
+      else if (!this.plugged && this.faultRequiresStep('install-port') && !this.port) stepId = 'install-port';
+      else if (!this.plugged) stepId = 'reconnect';
+      else stepId = 'close-cover';
     } else if (this.closing) {
-      text = this.screws.every((s) => s.in && s.p < 0.15) ? 'Press the POWER button on the test rig.' : 'Seat the screws and tighten them with the driver.';
+      stepId = this.screws.every((s) => s.in && s.p < 0.15) ? 'test' : 'fasten';
     }
+    const graphStepId = this.device.stepOrder.find((id) => id === stepId) ?? '';
+    const step = this.device.steps.find((candidate) => candidate.id === graphStepId);
+    const text = step?.hint ?? '';
     if (text === this.lastHint) return;
     this.lastHint = text; bus.emit('hint', text);
     for (const id of ['driver', 'spudger', 'probe', 'brush']) { const it = this.it(id); if (this.hl.state(it.e) === 4) this.hl.set(it.e, 0); }
-    if (target) this.hl.set(this.it(target).e, 4, this.now, 6);
+    if (step?.target) this.hl.set(this.it(step.target).e, 4, this.now, 6);
   }
 }
 void Animated;

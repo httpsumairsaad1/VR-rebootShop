@@ -1,4 +1,4 @@
-export type FaultId = 'port' | 'battery' | 'dust';
+export type FaultId = string;
 export const FAULTS: Record<FaultId, { label: string; symptom: string; fee: number; tip: string }> = {
   port: { label: 'Charge port module', symptom: "Won't charge", fee: 60, tip: 'The port pad reads 0 V.' },
   battery: { label: 'Swollen battery', symptom: 'Dies at 40%', fee: 75, tip: 'The battery pad reads low.' },
@@ -20,14 +20,14 @@ export const CUSTOMERS: Array<{ id: CustomerId; name: string; lines: Record<Faul
     lines: { port: 'Phone is dead. Not charging since Monday.', battery: 'Battery drains very fast, even when off.', dust: 'Make it cool again, please. Burning hot.' } },
 ];
 
-export type Order = { id: number; customer: (typeof CUSTOMERS)[number]; faults: FaultId[]; fee: number; line: string; mystery: boolean; targetSeconds: number };
+export type Order = { id: number; deviceId?: string; customer: (typeof CUSTOMERS)[number]; faults: FaultId[]; fee: number; line: string; mystery: boolean; targetSeconds: number };
 const SEQ: FaultId[][] = [['port'], ['dust'], ['battery'], ['port', 'dust'], ['battery', 'dust'], ['port'], ['dust'], ['battery']];
 export function makeOrder(counter: number, mystery: boolean): Order {
   const faults: FaultId[] = mystery ? (counter % 2 === 0 ? ['port', 'dust'] : ['battery', 'dust']) : SEQ[counter % SEQ.length];
   const customer = CUSTOMERS[counter % CUSTOMERS.length];
   const fee = Math.round(faults.reduce((s, f) => s + FAULTS[f].fee, 0) * (mystery ? 1.5 : 1));
   const line = mystery ? 'A mystery crate! Two problems inside. Good luck.' : customer.lines[faults[0]];
-  return { id: counter, customer, faults, fee, line, mystery, targetSeconds: mystery ? 300 : 120 + 60 * faults.length };
+  return { id: counter, deviceId: 'phone', customer, faults, fee, line, mystery, targetSeconds: mystery ? 300 : 120 + 60 * faults.length };
 }
 
 export const UPGRADES = [
