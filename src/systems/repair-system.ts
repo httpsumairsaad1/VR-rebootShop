@@ -92,7 +92,7 @@ export class DeviceRepairRuntime extends createSystem({
       this.queries.grabbed.subscribe('disqualify', (e) => this.release(e)),
       this.queries.hovered.subscribe('qualify', (e) => { if (!this.isHeld(e) && this.hl.state(e) === 0) this.hl.set(e, 1); }),
       this.queries.hovered.subscribe('disqualify', (e) => { if (!this.isHeld(e) && this.hl.state(e) === 1) this.hl.set(e, 0); }),
-      this.queries.guided.subscribe('qualify', (e) => { const active = e.getValue(GuidedTarget, 'active'); if (active) this.hl.set(e, 6); }),
+      this.queries.guided.subscribe('qualify', (e) => { const active = e.getValue(GuidedTarget, 'active'); if (active) this.hl.set(e, 5); }),
       this.queries.guided.subscribe('disqualify', (e) => { this.hl.set(e, 0); }),
       bus.on('start-order', (o: Order) => this.startOrder(o)),
       bus.on('press', (a: string) => { if (a === 'power') this.powerTest(); }),

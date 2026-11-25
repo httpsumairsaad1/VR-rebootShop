@@ -32,7 +32,7 @@ export const TutorialState = createComponent('TutorialState', {
   firstPhoneReturned: { type: Types.Boolean, default: false },
 });
 
-/** Marks an entity as the current "guided target" - highlights in green. */
+/** Marks an entity as the current "guided target" - highlights in sky blue. */
 export const GuidedTarget = createComponent('GuidedTarget', {
   active: { type: Types.Boolean, default: false },
   stepIndex: { type: Types.Int8, default: 0 },
