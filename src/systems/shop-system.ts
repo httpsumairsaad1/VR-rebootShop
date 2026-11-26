@@ -1,4 +1,4 @@
-import { createSystem, Entity, UIKitMLAsset } from '@iwsdk/core';
+import { createSystem, Entity, Quaternion, UIKitMLAsset, Vector3 } from '@iwsdk/core';
 import { bus } from '../game/bus.js';
 import { CUSTOMERS, ORDERS_PER_DAY, PRICES, START_MONEY, UPGRADES, XP_PER_LEVEL, levelFromXp, makeOrder, payFor, starsFor, type Order } from '../data/repair-data.js';
 import { PanelRef } from '../lib/panel-ref.js';
@@ -17,10 +17,12 @@ export class ShopSystem extends createSystem({}) {
   private order: Order | null = null;
   private ordersToday = 0; private dayEarned = 0; private dayStars = 0; private pendingMystery = false;
   private timer = 1.5; private startT = 0; private now = 0; private logs: string[] = []; private page = 'parts'; private booted = false;
+  private readonly wristPosition = new Vector3(); private readonly wristOffset = new Vector3(-0.035, 0.075, 0.055);
+  private readonly worldOffset = new Vector3(); private readonly wristRotation = new Quaternion(); private readonly parentRotation = new Quaternion();
 
   init(): void {
     const p = (id: string): PanelRef => new PanelRef(this.world.getSceneObject<UIKitMLAsset>(id));
-    this.hud = p('hud'); this.orderP = p('order-panel'); this.logP = p('log-panel'); this.tab = p('tablet-panel'); this.rc = p('receipt-panel');
+    this.hud = p('hud'); this.orderP = p('order-panel'); this.logP = this.orderP; this.tab = p('tablet-panel'); this.rc = this.tab;
     this.load();
     const c = this.cleanupFuncs;
     this.tab.onClick('tab-parts', () => this.setPage('parts'), c); this.tab.onClick('tab-up', () => this.setPage('up'), c); this.tab.onClick('tab-book', () => this.setPage('book'), c);
@@ -34,7 +36,7 @@ export class ShopSystem extends createSystem({}) {
       bus.on('log', (t: string) => { this.logs.push(t); if (this.logs.length > 40) this.logs.shift(); this.refreshLog(); }),
       bus.on('hint', (t: string) => this.hud.text('hud-hint', t)),
     );
-    this.rc.visible = false; this.setPage('parts');
+    this.rc.show('receipt-screen', false); this.rc.show('shop-screen', true); this.setPage('parts');
     for (const id of ['a', 'b', 'c']) this.showCustomer(id, false);
     this.refreshAll();
   }
@@ -52,7 +54,7 @@ export class ShopSystem extends createSystem({}) {
     const cid = `customer-${this.order.customer.id}`;
     bus.emit('anim', { node: 'shop-door', clip: 'open' }); bus.emit('anim', { node: 'counter', clip: 'ring' }); sfx.bell();
     bus.emit('anim', { node: cid, clip: 'talk', loop: true });
-    this.orderP.visible = true;
+    this.orderP.show('order-card', true); this.logP.show('repair-log', false);
     this.orderP.text('ord-name', this.order.customer.name + (this.order.mystery ? '  (MYSTERY CRATE)' : ''));
     this.orderP.text('ord-chip', this.order.mystery ? 'Two hidden faults' : `"${this.order.faults.map((f) => ({ port: "Won't charge", battery: 'Dies at 40%', dust: 'Overheats' })[f]).join(' + ')}"`);
     this.say(this.order.line, 'Press the GREEN button on the bench to accept.'); this.orderP.text('ord-fee', `Offer: $${this.order.fee}`);
@@ -64,6 +66,7 @@ export class ShopSystem extends createSystem({}) {
     if (this.phase !== 'offered' || !this.order) { if (this.phase === 'waiting' || this.phase === 'result') bus.emit('hint', 'Next customer is on the way...'); return; }
     this.phase = 'repair'; this.startT = this.now; this.logs = [];
     bus.emit('anim', { node: 'btn-accept', clip: 'press' }); bus.emit('anim', { node: `customer-${this.order.customer.id}`, clip: 'idle', loop: true });
+    this.orderP.show('order-card', false); this.logP.show('repair-log', true);
     bus.emit('start-order', this.order); this.say('Thanks! I will wait right here.', 'Job in progress'); sfx.click();
     this.refreshLog();
   }
@@ -75,13 +78,13 @@ export class ShopSystem extends createSystem({}) {
     this.ordersToday++; this.dayEarned += pay; this.dayStars += stars; this.save();
     chime(); sfx.coin(); this.say(o.customer.thanks, `Paid $${pay}   |   ${stars} / 5 stars`);
     bus.emit('anim', { node: `customer-${o.customer.id}`, clip: 'talk', loop: true });
-    this.phase = 'result'; this.timer = 4; bus.emit('daylight', 1 - 0.75 * (this.ordersToday / ORDERS_PER_DAY));
+    this.phase = 'result'; this.timer = 4; this.orderP.show('order-card', true); this.logP.show('repair-log', false); bus.emit('daylight', 1 - 0.75 * (this.ordersToday / ORDERS_PER_DAY));
     bus.emit('log', `Paid $${pay} (${stars} stars)`); this.refreshAll();
     if (this.ordersToday >= ORDERS_PER_DAY) this.timer = 4.5;
   }
 
   private endDay(): void {
-    this.phase = 'day-end'; this.rc.visible = true; this.orderP.visible = false;
+    this.phase = 'day-end'; this.rc.show('shop-screen', false); this.rc.show('receipt-screen', true); this.orderP.show('order-card', false); this.logP.show('repair-log', false);
     for (const c of CUSTOMERS) this.showCustomer(c.id, false);
     bus.emit('anim', { node: 'printer', clip: 'print' }); bus.emit('daylight', 0.1); sfx.coin();
     const avg = (this.dayStars / Math.max(1, this.ordersToday)).toFixed(1);
@@ -94,7 +97,7 @@ export class ShopSystem extends createSystem({}) {
 
   private nextDay(): void {
     if (this.phase !== 'day-end') return;
-    this.s.day++; this.ordersToday = 0; this.dayEarned = 0; this.dayStars = 0; this.rc.visible = false; this.save();
+    this.s.day++; this.ordersToday = 0; this.dayEarned = 0; this.dayStars = 0; this.rc.show('receipt-screen', false); this.rc.show('shop-screen', true); this.orderP.show('order-card', true); this.save();
     bus.emit('anim', { node: 'btn-day', clip: 'press' }); bus.emit('daylight', 1); this.phase = 'waiting'; this.timer = 2; sfx.click(); this.refreshAll();
   }
 
@@ -139,11 +142,21 @@ export class ShopSystem extends createSystem({}) {
 
   update(delta: number, time: number): void {
     this.now = time;
+    if (this.world.xrEnabled) this.followWristHud();
     if (!this.booted) { this.booted = true; bus.emit('stock', { ...this.s.stock }); bus.emit('upgrades', [...this.s.upgrades]); bus.emit('daylight', 1); setSound(true); this.refreshAll(); }
     if (this.phase === 'repair') { const t = Math.floor(time - this.startT); this.logP.text('log-timer', `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`); }
     if (this.phase === 'waiting' || this.phase === 'result') {
       this.timer -= delta;
       if (this.timer <= 0) { if (this.ordersToday >= ORDERS_PER_DAY) this.endDay(); else this.nextOrder(); }
     }
+  }
+
+  private followWristHud(): void {
+    const grip = this.world.playerSpaceEntities.gripSpaces.left.object3D, panel = this.hud.root, parent = panel?.parent;
+    if (!grip || !panel || !parent) return;
+    grip.updateWorldMatrix(true, false); grip.getWorldPosition(this.wristPosition); grip.getWorldQuaternion(this.wristRotation);
+    this.worldOffset.copy(this.wristOffset).applyQuaternion(this.wristRotation); this.wristPosition.add(this.worldOffset);
+    parent.updateWorldMatrix(true, false); panel.position.copy(parent.worldToLocal(this.wristPosition));
+    parent.getWorldQuaternion(this.parentRotation); panel.quaternion.copy(this.parentRotation.invert().multiply(this.wristRotation));
   }
 }

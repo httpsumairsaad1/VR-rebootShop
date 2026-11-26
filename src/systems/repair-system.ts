@@ -119,7 +119,7 @@ export class DeviceRepairRuntime extends createSystem({
     this.desk = new DesktopInput({
       head: () => this.player.head,
       items: () => this.visibleItems(),
-      panels: () => ['hud', 'order-panel', 'log-panel', 'tablet-panel', 'receipt-panel'].map((id) => this.world.getSceneObject(id) as Object3D | undefined).filter((o): o is Object3D => !!o),
+        panels: () => ['hud', 'order-panel', 'tablet-panel'].map((id) => this.world.getSceneObject(id) as Object3D | undefined).filter((o): o is Object3D => !!o),
       onGrab: (e) => this.grab(e), onRelease: (e) => this.release(e),
       onMove: (e, p) => { e.object3D?.getWorldQuaternion(this.qa); this.setPose(e, p, this.qa); },
       onHover: (e) => { for (const it of this.items.values()) if (this.hl.state(it.e) === 1 && it.e !== e) this.hl.set(it.e, 0); if (e && !this.isHeld(e) && this.hl.state(e) === 0) this.hl.set(e, 1); },

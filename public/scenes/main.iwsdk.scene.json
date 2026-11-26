@@ -1448,30 +1448,6 @@
       "name": "order-panel",
       "transform": {
         "position": [
-          0.5,
-          1.55,
-          -1.35
-        ],
-        "rotationDeg": [
-          14,
-          -21.8,
-          0
-        ]
-      }
-    },
-    {
-      "components": {
-        "PokeInteractable": {},
-        "RayInteractable": {}
-      },
-      "content": {
-        "asset": "log-panel",
-        "type": "asset"
-      },
-      "id": "log-panel",
-      "name": "log-panel",
-      "transform": {
-        "position": [
           -0.5,
           1.02,
           -0.62
@@ -1503,54 +1479,6 @@
         "rotationDeg": [
           62,
           0,
-          0
-        ]
-      }
-    },
-    {
-      "components": {
-        "PokeInteractable": {},
-        "RayInteractable": {}
-      },
-      "content": {
-        "asset": "receipt-panel",
-        "type": "asset"
-      },
-      "id": "receipt-panel",
-      "name": "receipt-panel",
-      "transform": {
-        "position": [
-          -0.55,
-          1.45,
-          -1.42
-        ],
-        "rotationDeg": [
-          9.9,
-          22.6,
-          0
-        ]
-      }
-    },
-    {
-      "components": {
-        "PokeInteractable": {},
-        "RayInteractable": {}
-      },
-      "content": {
-        "asset": "guide-panel",
-        "type": "asset"
-      },
-      "id": "guide-panel",
-      "name": "guide-panel",
-      "transform": {
-        "position": [
-          -0.8,
-          1.4,
-          -0.6
-        ],
-        "rotationDeg": [
-          -10,
-          30,
           0
         ]
       }

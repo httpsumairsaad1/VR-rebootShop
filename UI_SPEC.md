@@ -31,17 +31,12 @@ VR legibility: world-locked panels 0.7 to 1.0 m away, body text at least 2.2 cm 
 | 18 | `help-section pop` ("Book": Guides, Tools, Gadgets; "How a repair goes") | Help and manual | A physical **repair manual** on the shelf; pinch to flip pages; also the tablet Book tab | Shelf, tablet |
 | 19 | "Crate done: bronze medal. C in 154s" | Medal result | **Medal card** on the receipt and tablet; keepsake on the showcase shelf | Receipt, shelf |
 
-## 3. Panels to build (`public/ui/*.uikitml`)
-1. `bench-monitor`: boot logo, Start Shift, boot-test result, voltage readout
-2. `speech-bubble`: customer line, status chip, price offer (Accept is a physical button)
-3. `order-tag`: name, device, symptom chip, price
-4. `repair-log`: checklist rows that tick as steps complete; Assist button
-5. `hint-pill`: one line, icon
-6. `wrist-hud`: day, stars, coins
-7. `shop-tablet`: tabs Upgrades, Parts, Market, Flips, Book; Daily Mystery Crate card; contracts
-8. `day-receipt`: earnings, stars, medal, Open day
-9. `decision-plate`: stock-out choices
-Panels bind to data through `UiBindingSystem`; no game logic inside panels. Keep panels small and diegetic; only the shop tablet may be larger (about 40 x 30 cm).
+## 3. Three player-facing panels
+1. `hud-panel` on the left wrist: day, money, rating, level, progress and one contextual hint.
+2. `order-panel` on the repair clipboard: customer offer before acceptance, then the live repair log while the job is active.
+3. `tablet-panel` on the shop tablet: Parts, Upgrades and Book pages, plus tutorial and day receipt views when those are active.
+
+Keep the bench monitor as a physical device screen and keep Accept, Power and next-day actions on their physical buttons. Do not add floating speech, log, receipt or tutorial panels. UIKitML is presentation only; game logic remains in systems.
 
 ## 4. States and feedback
 Status chips: amber = loose/unknown, red = broken/short, green = healthy; the device LED matches. Success = chime + haptic pulse + coin burst; wrong action = soft thud + brief red flash. Highlights: hover white, selected sky-blue, correct snap green, wrong red; always pair colour with an icon or pulse shape. Haptics: screw-engagement ticks, snap click, brush-stroke buzz, power-on swell.

@@ -148,7 +148,7 @@ export class TutorialSystem extends createSystem({
 
     // Get guide panel
     try {
-      this.guidePanel = this.world.getSceneObject<UIKitMLAsset>('guide-panel');
+      this.guidePanel = this.world.getSceneObject<UIKitMLAsset>('tablet-panel');
     } catch { /* panel not found */ }
 
     this.cleanupFuncs.push(
@@ -283,15 +283,23 @@ export class TutorialSystem extends createSystem({
 
     const showGuide = this.stateEntity.getValue(TutorialState, 'showGuide') ?? true;
     if (this.currentStep >= STEPS.length || !showGuide) {
-      this.guidePanel.visible = false;
+      this.guidePanel.getElementById('guide-panel-root')?.setProperties({ display: 'none' });
+      this.guidePanel.getElementById('shop-screen')?.setProperties({ display: 'flex' });
       if (this.stateEntity) this.stateEntity.setValue(UiBindingState, 'guideVisible', false);
       return;
     }
 
-    this.guidePanel.visible = true;
+    this.guidePanel.getElementById('shop-screen')?.setProperties({ display: 'none' });
+    this.guidePanel.getElementById('guide-panel-root')?.setProperties({ display: 'flex' });
     if (this.stateEntity) this.stateEntity.setValue(UiBindingState, 'guideVisible', true);
     const step = STEPS[this.currentStep];
     const progressPct = ((this.currentStep) / STEPS.length) * 100;
+    this.guidePanel.getElementById('guide-step-num')?.setProperties({ text: String(this.currentStep + 1) });
+    this.guidePanel.getElementById('guide-progress')?.setProperties({ text: `${Math.round(progressPct)}%` });
+    this.guidePanel.getElementById('guide-step-title')?.setProperties({ text: step.title });
+    this.guidePanel.getElementById('guide-step-detail')?.setProperties({ text: step.detail });
+    this.guidePanel.getElementById('guide-tip')?.setProperties({ text: 'The next task glows blue. Pick it up and follow the step.' });
+    this.guidePanel.getElementById('guide-prev')?.setProperties({ display: this.currentStep > 0 ? 'flex' : 'none' });
 
     if (this.stateEntity) {
       this.stateEntity.setValue(UiBindingState, 'guideStepNum', String(this.currentStep + 1));

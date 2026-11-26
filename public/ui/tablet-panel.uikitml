@@ -1,24 +1,55 @@
 <meta preferred-color-scheme="light" />
 <style>
-  .tab { width: 27; height: 20; flex-direction: column; gap: 0.9; padding: 1; background-color: #f7ebd4; border-radius: 1.4; }
-  .row { width: 25; flex-direction: row; justify-content: space-between; align-items: center; }
+  .root { width: 40; height: 42; flex-direction: column; }
+  .shop { width: 38; height: 40; flex-direction: column; gap: 1; padding: 1; background-color: #f7ebd4; border-radius: 1.4; }
+  .row { width: 38; flex-direction: row; justify-content: space-between; align-items: center; }
   .money { font-size: 2.2; font-weight: 700; color: #b8860b; }
   .name { font-size: 1.8; font-weight: 700; color: #3b2a22; }
-  .tb { width: 8; height: 3; background-color: #efe0c0; border-color: #3b2a22; border-width: 0.15; border-radius: 0.8; font-size: 1.6; font-weight: 700; color: #3b2a22; }
+  .tb { width: 11; height: 3.5; background-color: #efe0c0; border-color: #3b2a22; border-width: 0.15; border-radius: 0.8; font-size: 2; font-weight: 700; color: #3b2a22; }
   .tb:hover { background-color: #ffb27a; }
-  .page { width: 25; flex-direction: column; gap: 0.6; }
-  .buy { width: 25; height: 3.1; background-color: #ffffff; border-color: #ff8a3d; border-width: 0.2; border-radius: 0.8; font-size: 1.5; font-weight: 700; color: #3b2a22; }
+  .page { width: 38; flex-direction: column; gap: 0.6; }
+  .buy { width: 38; height: 3.2; background-color: #ffffff; border-color: #ff8a3d; border-width: 0.2; border-radius: 0.8; font-size: 2; font-weight: 700; color: #3b2a22; }
   .buy:hover { background-color: #ffd9bd; }
-  .crate { width: 25; height: 3.2; background-color: #ff8a3d; border-radius: 0.9; font-size: 1.6; font-weight: 700; color: #ffffff; }
-  .book { width: 25; font-size: 1.45; color: #4a3326; }
+  .crate { width: 38; height: 3.2; background-color: #ff8a3d; border-radius: 0.9; font-size: 1.6; font-weight: 700; color: #ffffff; }
+  .book { width: 38; font-size: 2.2; color: #4a3326; }
+  .paper { width: 38; height: 40; flex-direction: column; justify-content: space-between; padding: 2; background-color: #fffdf6; border-color: #3b2a22; border-width: 0.3; border-radius: 1.5; }
+  .title { font-size: 3.4; font-weight: 700; color: #3b2a22; }
+  .copy { font-size: 2.6; color: #3b2a22; }
+  .btn { width: 34; height: 5.4; background-color: #ff8a3d; border-radius: 1.4; font-size: 2.6; font-weight: 700; color: #ffffff; }
+  .btn:hover { background-color: #ffa464; }
+  .guide { width: 38; height: 40; flex-direction: column; gap: 1; padding: 2; background-color: #fffdf6; border-color: #3b2a22; border-width: 0.3; border-radius: 1.5; }
+  .guide-title { color: #2f8f86; font-size: 2.8; font-weight: 700; }
+  .step-num { color: #b8860b; font-size: 2.2; font-weight: 700; }
+  .step-title { color: #3b2a22; font-size: 3.2; font-weight: 700; }
+  .step-detail { width: 34; color: #4a3326; font-size: 2.4; line-height: 1.25; }
+  .tip { width: 34; font-size: 2.2; font-weight: 600; color: #5b3d2c; background-color: #fff8e0; padding: 1; }
+  .guide-btn { width: 16; height: 4.2; background-color: #2f8f86; border-radius: 1.2; font-size: 2.2; font-weight: 700; color: #ffffff; }
+  .skip-btn { width: 34; height: 3.5; background-color: transparent; border-color: #6b5a4a; border-width: 0.2; border-radius: 1; font-size: 2; color: #6b5a4a; }
 </style>
-<Panel width="27" height="20">
-  <div class="tab">
-    <div class="row"><span class="name">SHOP TABLET</span><span id="tab-money" class="money">$150</span></div>
-    <div class="row"><button id="tab-parts" class="tb">PARTS</button><button id="tab-up" class="tb">UPGRADES</button><button id="tab-book" class="tb">BOOK</button></div>
-    <div id="page-parts" class="page"><button id="buy-port" class="buy">Port module</button><button id="buy-battery" class="buy">Battery</button></div>
-    <div id="page-up" class="page" style="display: none"><button id="up-1" class="buy">Pro motor</button><button id="up-2" class="buy">Magnifier</button><button id="up-3" class="buy">Cleaning kit</button></div>
-    <div id="page-book" class="page" style="display: none"><span class="book">1 Test it: probe the pads.</span><span class="book">2 Open: screws, then spudger.</span><span class="book">3 Unplug the battery first.</span><span class="book">4 Swap, clean, close, POWER.</span></div>
-    <button id="crate-btn" class="crate">DAILY MYSTERY CRATE</button>
+<Panel width="40" height="42">
+  <div class="root">
+    <div id="shop-screen" class="shop">
+      <div class="row"><span class="name">SHOP TABLET</span><span id="tab-money" class="money">$150</span></div>
+      <div class="row"><button id="tab-parts" class="tb">PARTS</button><button id="tab-up" class="tb">UPGRADES</button><button id="tab-book" class="tb">BOOK</button></div>
+      <div id="page-parts" class="page"><button id="buy-port" class="buy">Port module</button><button id="buy-battery" class="buy">Battery</button></div>
+      <div id="page-up" class="page" style="display: none"><button id="up-1" class="buy">Pro motor</button><button id="up-2" class="buy">Magnifier</button><button id="up-3" class="buy">Cleaning kit</button></div>
+      <div id="page-book" class="page" style="display: none"><span class="book">1 Test it: probe the pads.</span><span class="book">2 Open: screws, then spudger.</span><span class="book">3 Unplug the battery first.</span><span class="book">4 Swap, clean, close, POWER.</span></div>
+      <button id="crate-btn" class="crate">DAILY MYSTERY CRATE</button>
+    </div>
+    <div id="receipt-screen" class="paper" style="display: none">
+      <span id="rc-title" class="title">DAY COMPLETE</span>
+      <span id="rc-1" class="copy">Repairs: 0</span><span id="rc-2" class="copy">Earned: $0</span>
+      <span id="rc-3" class="copy">Average rating: 0</span><span id="rc-4" class="copy">Medal</span>
+      <button id="rc-open" class="btn">OPEN NEXT DAY</button>
+    </div>
+    <div id="guide-panel-root" class="guide" style="display: none">
+      <span class="guide-title">REPAIR GUIDE <span id="guide-step-num" class="step-num">1</span>/ 11</span>
+      <span id="guide-progress" class="step-num">0%</span>
+      <div id="guide-step-title" class="step-title">Welcome to Reboot Lab</div>
+      <div id="guide-step-detail" class="step-detail">A customer is waiting. Press the GREEN button on the bench to accept the job.</div>
+      <div id="guide-tip" class="tip">The next task will glow blue. Pick it up and follow the step.</div>
+      <div class="row"><button id="guide-prev" class="guide-btn">BACK</button><button id="guide-next" class="guide-btn">NEXT</button></div>
+      <button id="guide-skip" class="skip-btn">Skip Tutorial</button>
+    </div>
   </div>
 </Panel>
